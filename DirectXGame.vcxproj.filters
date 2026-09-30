@@ -1,0 +1,81 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="ソース ファイル">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="ヘッダー ファイル">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="リソース ファイル">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="ソース ファイル\シーン関係">
+      <UniqueIdentifier>{7bc9c8be-a44d-448a-88c4-ec64c9f24ac6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\シーン関係\各種シーン">
+      <UniqueIdentifier>{e941cd60-dedf-43d2-8b91-7f5df0d1f111}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\ステージ関係">
+      <UniqueIdentifier>{15245727-c029-4574-a185-aeac7e2cf166}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\プレイヤーの挙動">
+      <UniqueIdentifier>{cbbd21cb-e5fc-4d1c-a32e-44adc8bd369a}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="TitleScene.cpp">
+      <Filter>ソース ファイル\シーン関係\各種シーン</Filter>
+    </ClCompile>
+    <ClCompile Include="SceneManager.cpp">
+      <Filter>ソース ファイル\シーン関係</Filter>
+    </ClCompile>
+    <ClCompile Include="GamePlayScene.cpp">
+      <Filter>ソース ファイル\シーン関係\各種シーン</Filter>
+    </ClCompile>
+    <ClCompile Include="GameOver.cpp">
+      <Filter>ソース ファイル\シーン関係\各種シーン</Filter>
+    </ClCompile>
+    <ClCompile Include="GameClear.cpp">
+      <Filter>ソース ファイル\シーン関係\各種シーン</Filter>
+    </ClCompile>
+    <ClCompile Include="MapChipField.cpp">
+      <Filter>ソース ファイル\ステージ関係</Filter>
+    </ClCompile>
+    <ClCompile Include="Fade.cpp">
+      <Filter>ソース ファイル\シーン関係</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="SceneManager.h">
+      <Filter>ソース ファイル\シーン関係</Filter>
+    </ClInclude>
+    <ClInclude Include="TitleScene.h">
+      <Filter>ソース ファイル\シーン関係\各種シーン</Filter>
+    </ClInclude>
+    <ClInclude Include="GamePlayScene.h">
+      <Filter>ソース ファイル\シーン関係\各種シーン</Filter>
+    </ClInclude>
+    <ClInclude Include="AllSceneInclude.h">
+      <Filter>ソース ファイル\シーン関係\各種シーン</Filter>
+    </ClInclude>
+    <ClInclude Include="GameOver.h">
+      <Filter>ソース ファイル\シーン関係\各種シーン</Filter>
+    </ClInclude>
+    <ClInclude Include="GameClear.h">
+      <Filter>ソース ファイル\シーン関係\各種シーン</Filter>
+    </ClInclude>
+    <ClInclude Include="MapChipField.h">
+      <Filter>ソース ファイル\ステージ関係</Filter>
+    </ClInclude>
+    <ClInclude Include="Fade.h">
+      <Filter>ソース ファイル\シーン関係</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
