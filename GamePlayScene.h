@@ -2,6 +2,9 @@
 #include "Fade.h"
 #include "SceneManager.h"
 #include <KamataEngine.h>
+
+#include "MyMath.h"
+
 class GamePlayScene : public SceneManager {
 public:
 	GamePlayScene() = default;
