@@ -8,7 +8,7 @@
 class DeathParticles {
 public:
 	void Initialize(KamataEngine::Model* model, KamataEngine::Camera* camera, const KamataEngine::Vector3& position);
-	void Update(); // UpdataからUpdateに直しておくと後が楽です
+	void Update(); // UpdateからUpdateに直しておくと後が楽です
 	void Draw();
 
 	bool isFinished_ = false;

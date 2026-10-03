@@ -70,7 +70,7 @@ public:
 	void Initialize(KamataEngine::Model* model, KamataEngine::Model* modelAttack, KamataEngine::Camera* camera, const KamataEngine::Vector3& position);
 
 	// 更新処理
-	void Updata();
+	void Update();
 
 	void Draw();
 	void EnemyOnCollsion(const Enemy* enemy);

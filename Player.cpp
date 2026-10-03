@@ -34,7 +34,7 @@ void Player::Initialize(
 	camera_ = camera;
 }
 
-void Player::Updata() {
+void Player::Update() {
 
 #pragma region ビヘイビアの切り替え処理と初期化
 	if (behaviorRequest_ != Behavior::kUnknown) {
