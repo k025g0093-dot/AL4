@@ -61,7 +61,7 @@ private:
 	//座標補間の割合
 	static inline const float kInterpolationRate = 0.1f;
 	//速度掛け率
-	static inline const float kVelocityBias = 20.0f;
+	static inline const float kVelocityBias =0.50f;
 
 	//自作関数
 	KamataEngine::Vector3 Lerp(const KamataEngine::Vector3& v1, const KamataEngine::Vector3& v2, float t);

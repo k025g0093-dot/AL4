@@ -32,6 +32,9 @@ void Player::Initialize(
 	worldTransform_.translation_ = position;
 	worldTransform_.rotation_.y = std::numbers::pi_v<float> * 3.0f / 2.0f;
 	camera_ = camera;
+
+	worldTransform_.matWorld_ = MakeAffineMatrix(worldTransform_.scale_, worldTransform_.rotation_, worldTransform_.translation_);
+	worldTransform_.TransferMatrix();
 }
 
 void Player::Update() {
@@ -99,8 +102,8 @@ void Player::Update() {
 
 		break;
 
-	//default:
-	//	break;
+		// default:
+		//	break;
 	}
 #pragma endregion
 
@@ -297,11 +300,11 @@ void Player::MovePlayer() {
 #pragma region プレイヤーの移動処理
 	if (onGround_) {
 
-		if (Input::GetInstance()->PushKey(DIK_RIGHT) || Input::GetInstance()->PushKey(DIK_LEFT)) {
+		if (Input::GetInstance()->PushKey(DIK_A) || Input::GetInstance()->PushKey(DIK_D)) {
 
 			Vector3 acceleration = {};
 
-			if (Input::GetInstance()->PushKey(DIK_RIGHT)) {
+			if (Input::GetInstance()->PushKey(DIK_D)) {
 				if (lrDirection_ != LRDirection::kRight) {
 					lrDirection_ = LRDirection::kRight;
 
@@ -314,7 +317,7 @@ void Player::MovePlayer() {
 				}
 
 				acceleration.x += kAcceleration;
-			} else if (Input::GetInstance()->PushKey(DIK_LEFT)) {
+			} else if (Input::GetInstance()->PushKey(DIK_A)) {
 
 				if (lrDirection_ != LRDirection::kLeft) {
 					lrDirection_ = LRDirection::kLeft;
@@ -335,13 +338,6 @@ void Player::MovePlayer() {
 		} else {
 			velocity_.x *= (1.0f - kAttenuation);
 		}
-
-		if (Input::GetInstance()->PushKey(DIK_UP)) {
-			velocity_ += Vector3(0, kJumpAcceleration, 0);
-		}
-	} else {
-		velocity_ += Vector3(0, -kGravityAcceleration, 0);
-		velocity_.y = std::max(velocity_.y, -kLimitFallSpeed);
 	}
 #pragma endregion
 }
