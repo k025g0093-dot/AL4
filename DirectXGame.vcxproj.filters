@@ -75,9 +75,6 @@
     <ClCompile Include="stageManager.cpp">
       <Filter>ソース ファイル\ステージ関係</Filter>
     </ClCompile>
-    <ClCompile Include="ShieldEnemy.cpp">
-      <Filter>ソース ファイル\敵</Filter>
-    </ClCompile>
     <ClCompile Include="Enemy.cpp">
       <Filter>ソース ファイル\敵</Filter>
     </ClCompile>
@@ -132,9 +129,6 @@
       <Filter>ソース ファイル\ステージ関係</Filter>
     </ClInclude>
     <ClInclude Include="Enemy.h">
-      <Filter>ソース ファイル\敵</Filter>
-    </ClInclude>
-    <ClInclude Include="ShieldEnemy.h">
       <Filter>ソース ファイル\敵</Filter>
     </ClInclude>
   </ItemGroup>

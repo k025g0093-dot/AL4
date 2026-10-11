@@ -11,6 +11,7 @@ void GamePlayScene::InitIalize() {
 	stageManager_ = new stageManager;
 	cameraController_ = new CameraController;
 	debugCamera_ = new DebugCamera(1280, 720);
+	skyDome_ = new SkyDome();
 
 #pragma region 基礎システムの初期化
 	worldTransform_.Initialize();
@@ -26,12 +27,15 @@ void GamePlayScene::InitIalize() {
 
 	modelPlayer_ = Model::CreateFromOBJ("player", true);
 	modelAttack_ = Model::CreateFromOBJ("hit_effect", true); // プレイヤーの攻撃モデル
+	modelSkyDome_ = Model::CreateFromOBJ("skydome", true);
 
 	// キャラクター以外の初期化
 	fade_->Initialize();
 	fade_->Start(Fade::Status::FadeIn, 1.0f);
 
 	// 各キャラクターの初期化
+
+	skyDome_->Initialize(modelSkyDome_);
 
 
 #pragma region カメラコントローラーの設定
@@ -109,6 +113,7 @@ void GamePlayScene::Draw() {
 
 	// 描画の開始位置
 	Model::PreDraw();
+	skyDome_->Draw(&activeCamera);
 
 #pragma region マップ描画
 	for (std::vector<WorldTransform*>& worldTransformBlockRow : worldTransformBlocks_) {
@@ -119,7 +124,6 @@ void GamePlayScene::Draw() {
 		}
 	}
 #pragma endregion
-
 	player_->Draw();
 	Model::PostDraw();
 
@@ -132,6 +136,7 @@ GamePlayScene::~GamePlayScene() {
 	delete modelAttack_;
 	delete modelPlayer_;
 	delete debugCamera_;
+	delete skyDome_;
 
 	for (std::vector<WorldTransform*>& worldTransformBlockRow : worldTransformBlocks_) {
 		for (WorldTransform* worldTransformBlock : worldTransformBlockRow) {
@@ -182,7 +187,7 @@ void GamePlayScene::RanGamePlayScene() {
 	} else {
 		camera_.UpdateMatrix();
 	}
-
+	skyDome_->Update();
 	player_->Update();
 
 

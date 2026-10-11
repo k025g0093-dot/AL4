@@ -9,6 +9,7 @@
 #include "MapChipField.h"//マップの読み込み
 #include "stageManager.h"
 #include "CameraController.h"
+#include "SkyDome.h"
 
 class GamePlayScene : public SceneManager {
 public:
@@ -46,13 +47,14 @@ private:
 	MapChipField* mapChipField_=nullptr;
 	stageManager* stageManager_ = nullptr;
 	CameraController* cameraController_;
-
+	SkyDome* skyDome_ = nullptr;
 	//KamataEngineを使う変数の宣言
 
 	//各モデル読み込み口
 	KamataEngine::Model* modelPlayer_ = nullptr;//プレイヤーのモデル
 	KamataEngine::Model* modelAttack_ = nullptr; // プレイヤーの攻撃モデル
 	KamataEngine::Model* modelMapBlock_ = nullptr; // マップのモデル
+	KamataEngine::Model* modelSkyDome_ = nullptr;  // マップのモデル
 
 	// ワールドトランスフォーム
 	KamataEngine::WorldTransform worldTransform_;
