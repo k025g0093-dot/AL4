@@ -81,7 +81,7 @@ void GamePlayScene::Updete() {
 
 		RanGamePlayScene();
 
-		bool start = Input::GetInstance()->TriggerKey(DIK_SPACE);
+		bool start = Input::GetInstance()->TriggerKey(DIK_P);
 
 		XINPUT_STATE joyState{};
 		if (Input::GetInstance()->GetJoystickState(0, joyState)) {

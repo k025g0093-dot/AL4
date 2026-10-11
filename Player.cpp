@@ -82,8 +82,18 @@ void Player::Update() {
 
 		CollisionMapInfo collisionMapInfo;
 		collisionMapInfo.velocity_ = velocity_;
+
 		// 1. 衝突判定と押し戻し量の計算
 		MapCollsion(collisionMapInfo);
+
+		if (kAttackPhase_ == AttackPhase::kCharge &&
+			(collisionMapInfo.isWall || 
+				collisionMapInfo.isCeiling ||
+				collisionMapInfo.isFloor)
+			) {
+			kAttackPhase_ = AttackPhase::kAfterglow; // ★ kAfterglowに変更
+		}
+
 		// 2. 壁衝突後の減衰
 		IsHitWall(collisionMapInfo);
 		// 3. 地面や天井の判定
@@ -93,8 +103,10 @@ void Player::Update() {
 		CheckedMove(collisionMapInfo);
 
 		// ★ ノックバック終了判定
-		if (!isKnockBack_ && attackCounter_ >= 10) {
+		if (kAttackPhase_ == AttackPhase::kAfterglow && attackCounter_ >= 10) {
 			velocity_.x = 0.0f; // 攻撃終了後に横方向の速度をリセット
+			velocity_.y = 0.0f; // 攻撃終了後に縦方向の速度をリセット
+			kAttakDirection = {0, 0, 0};
 			worldTransform_.scale_ = {1.0f, 1.0f, 1.0f};
 			kAttackPhase_ = AttackPhase::kSave; // 次の攻撃に備えてリセット
 			behaviorRequest_ = Behavior::kRoot;
@@ -176,14 +188,6 @@ void Player::BehaviorRootUpdate() {
 void Player::BehaviorAttackUpdate() {
 #pragma region プレイヤーの攻撃処理
 
-	if (lrDirection_ == LRDirection::kRight) {
-		velocity_.x += kAcceleration;
-	} else if (lrDirection_ == LRDirection::kLeft) {
-		velocity_.x += -kAcceleration;
-	}
-	velocity_.x = std::clamp(velocity_.x, -kLimitRunSpeed, kLimitRunSpeed);
-	velocity_.y = 0;
-
 	Vector3 offset;
 	if (lrDirection_ == LRDirection::kRight) {
 		offset = Vector3(0.8f, 0.0f, 0.0f); // 右方向に0.8ユニット前
@@ -200,6 +204,7 @@ void Player::BehaviorAttackUpdate() {
 		float t = static_cast<float>(attackCounter_) / 10.0f;
 		worldTransform_.scale_.z = EaseOut(1.0f, 0.3f, t);
 		worldTransform_.scale_.y = EaseOut(1.0f, 1.6f, t);
+		attackCounter_++;
 		if (attackCounter_ >= 10) {
 			kAttackPhase_ = AttackPhase::kCharge;
 			attackCounter_ = 0;
@@ -209,19 +214,16 @@ void Player::BehaviorAttackUpdate() {
 	case AttackPhase::kCharge: // 突進動作
 	{
 
-		if (lrDirection_ == LRDirection::kRight) {
-			velocity_.x = kAttackSpeed;
-		} else if (lrDirection_ == LRDirection::kLeft) {
-			velocity_.x = -kAttackSpeed;
-		}
+		velocity_.x = kAttackSpeed * kAttakDirection.x;
+		velocity_.y = kAttackSpeed * kAttakDirection.y;
 
-		float t = static_cast<float>(attackCounter_) / 10.0f;
-		worldTransform_.scale_.z = EaseOut(0.3f, 1.3f, t);
-		worldTransform_.scale_.y = EaseOut(1.6f, 0.7f, t);
-		if (attackCounter_ >= 10) {
-			kAttackPhase_ = AttackPhase::kAfterglow; // ★ kAfterglowに変更
-			attackCounter_ = 0;
-		}
+		velocity_.x = std::clamp(velocity_.x, -kLimitRunSpeed, kLimitRunSpeed);
+		velocity_.y = std::clamp(velocity_.y, -kLimitRunSpeed, kLimitRunSpeed);
+
+		//float t = static_cast<float>(attackCounter_) / 10.0f;
+		//worldTransform_.scale_.z = EaseOut(0.3f, 1.3f, t);
+		//worldTransform_.scale_.y = EaseOut(1.6f, 0.7f, t);
+
 		break;
 	}
 	case AttackPhase::kAfterglow: // 余韻動作
@@ -235,20 +237,6 @@ void Player::BehaviorAttackUpdate() {
 		break;
 	}
 
-	CollisionMapInfo collisionMapInfo;
-	collisionMapInfo.velocity_ = velocity_;
-	// 1. 衝突判定と押し戻し量の計算
-	MapCollsion(collisionMapInfo);
-
-	// 【★追加】壁衝突後の減衰
-	IsHitWall(collisionMapInfo);
-
-	// 【★追加】攻撃中も地面や天井の判定を行い、大元の速度（velocity_）をリセットする
-	IsHitTop(collisionMapInfo);
-	IsGrounded(collisionMapInfo);
-
-	// 最後に一回だけ座標を確定させる
-	CheckedMove(collisionMapInfo);
 #pragma endregion
 }
 
@@ -298,47 +286,57 @@ void Player::BehaviorKnockbackUpdate() {
 void Player::MovePlayer() {
 
 #pragma region プレイヤーの移動処理
-	if (onGround_) {
 
-		if (Input::GetInstance()->PushKey(DIK_A) || Input::GetInstance()->PushKey(DIK_D)) {
+	if (Input::GetInstance()->PushKey(DIK_A) || Input::GetInstance()->PushKey(DIK_D) || Input::GetInstance()->PushKey(DIK_W) || Input::GetInstance()->PushKey(DIK_S)) {
 
-			Vector3 acceleration = {};
+		if (Input::GetInstance()->PushKey(DIK_D)) {
+			if (lrDirection_ != LRDirection::kRight) {
+				lrDirection_ = LRDirection::kRight;
 
-			if (Input::GetInstance()->PushKey(DIK_D)) {
-				if (lrDirection_ != LRDirection::kRight) {
-					lrDirection_ = LRDirection::kRight;
-
-					turnFistRotationY_ = worldTransform_.rotation_.y;
-					turnTimer_ = 1.0f;
-				}
-
-				if (velocity_.x < 0.0f) {
-					velocity_.x *= (1.0f - kAttenuation);
-				}
-
-				acceleration.x += kAcceleration;
-			} else if (Input::GetInstance()->PushKey(DIK_A)) {
-
-				if (lrDirection_ != LRDirection::kLeft) {
-					lrDirection_ = LRDirection::kLeft;
-
-					turnFistRotationY_ = worldTransform_.rotation_.y;
-					turnTimer_ = 1.0f;
-				}
-
-				if (velocity_.x > 0.0f) {
-					velocity_.x *= (1.0f - kAttenuation);
-				}
-
-				acceleration.x -= kAcceleration;
+				turnFistRotationY_ = worldTransform_.rotation_.y;
+				turnTimer_ = 1.0f;
 			}
-			velocity_.x = acceleration.x;
 
-			velocity_.x = std::clamp(velocity_.x, -kLimitRunSpeed, kLimitRunSpeed);
-		} else {
-			velocity_.x *= (1.0f - kAttenuation);
+			if (velocity_.x < 0.0f) {
+				velocity_.x *= (1.0f - kAttenuation);
+			}
+
+			kAttakDirection.x = 1;
+		} else if (Input::GetInstance()->PushKey(DIK_A)) {
+
+			if (lrDirection_ != LRDirection::kLeft) {
+				lrDirection_ = LRDirection::kLeft;
+
+				turnFistRotationY_ = worldTransform_.rotation_.y;
+				turnTimer_ = 1.0f;
+			}
+
+			if (velocity_.x > 0.0f) {
+				velocity_.x *= (1.0f - kAttenuation);
+			}
+
+			kAttakDirection.x = -1;
+		} 
+		if (Input::GetInstance()->PushKey(DIK_W)) {
+
+			if (velocity_.y > 0.0f) {
+				velocity_.y *= (1.0f - kAttenuation);
+			}
+
+			kAttakDirection.y = 1;
+		} else if (Input::GetInstance()->PushKey(DIK_S)) {
+
+			if (velocity_.y > 0.0f) {
+				velocity_.y *= (1.0f - kAttenuation);
+			}
+
+			kAttakDirection.y = -1;
 		}
+		velocity_.x = std::clamp(velocity_.x, -kLimitRunSpeed, kLimitRunSpeed);
+	} else {
+		velocity_.x *= (1.0f - kAttenuation);
 	}
+
 #pragma endregion
 }
 
@@ -570,45 +568,31 @@ void Player::CheckCollisionBottom(CollisionMapInfo& info) {
 
 void Player::IsGrounded(const CollisionMapInfo& info) {
 
-	if (onGround_) {
-		if (velocity_.y > 0.0f) {
-			onGround_ = false;
-		} else {
+	std::array<Vector3, kNumCorner> positionsNew;
+	for (uint32_t i = 0; i < positionsNew.size(); ++i) {
+		positionsNew[i] = CornerPositio(worldTransform_.translation_ + info.velocity_, static_cast<Corner>(i));
+	}
 
-			std::array<Vector3, kNumCorner> positionsNew;
-			for (uint32_t i = 0; i < positionsNew.size(); ++i) {
-				positionsNew[i] = CornerPositio(worldTransform_.translation_ + info.velocity_, static_cast<Corner>(i));
-			}
+	MapChipType maoChipType;
+	bool hit = false;
 
-			MapChipType maoChipType;
-			bool hit = false;
+	MapChipField::IndexSet indexSet;
+	indexSet = mapChipField_->GetMapChipIndexSetByPosition(positionsNew[kLeftBottom] + Vector3(0, -0.05f, 0));
+	maoChipType = mapChipField_->GetMapChipTypeByIndex(indexSet.xIndex, indexSet.yIndex);
+	if (maoChipType == MapChipType::kBlock) {
+		hit = true;
+	}
 
-			MapChipField::IndexSet indexSet;
-			indexSet = mapChipField_->GetMapChipIndexSetByPosition(positionsNew[kLeftBottom] + Vector3(0, -0.05f, 0));
-			maoChipType = mapChipField_->GetMapChipTypeByIndex(indexSet.xIndex, indexSet.yIndex);
-			if (maoChipType == MapChipType::kBlock) {
-				hit = true;
-			}
+	indexSet = mapChipField_->GetMapChipIndexSetByPosition(positionsNew[kRightBottom] + Vector3(0, -0.05f, 0));
+	maoChipType = mapChipField_->GetMapChipTypeByIndex(indexSet.xIndex, indexSet.yIndex);
+	if (maoChipType == MapChipType::kBlock) {
+		hit = true;
+	}
 
-			indexSet = mapChipField_->GetMapChipIndexSetByPosition(positionsNew[kRightBottom] + Vector3(0, -0.05f, 0));
-			maoChipType = mapChipField_->GetMapChipTypeByIndex(indexSet.xIndex, indexSet.yIndex);
-			if (maoChipType == MapChipType::kBlock) {
-				hit = true;
-			}
-
-			if (!hit) {
-				onGround_ = false;
-			}
-		}
-
-	} else {
-
-		if (info.isFloor) { // 修正: isRoof → isFloor
-			DebugText::GetInstance()->ConsolePrintf("isFloor landing\n");
-			onGround_ = true;
-			velocity_.x *= (1.0f - kAttenuationLanding);
-			velocity_.y = 0.0f;
-		}
+	if (info.isFloor) { // 修正: isRoof → isFloor
+		DebugText::GetInstance()->ConsolePrintf("isFloor landing\n");
+		velocity_.x *= (1.0f - kAttenuationLanding);
+		velocity_.y = 0.0f;
 	}
 }
 
