@@ -25,6 +25,12 @@
     <Filter Include="ソース ファイル\プレイヤーの挙動">
       <UniqueIdentifier>{cbbd21cb-e5fc-4d1c-a32e-44adc8bd369a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\カメラ関係">
+      <UniqueIdentifier>{4a06174b-ef75-419d-b8ed-ed52dc340615}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\敵">
+      <UniqueIdentifier>{d7e955e4-08e1-4ea9-8bf3-9b99a84cd530}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -68,6 +74,9 @@
     </ClCompile>
     <ClCompile Include="stageManager.cpp">
       <Filter>ソース ファイル\ステージ関係</Filter>
+    </ClCompile>
+    <ClCompile Include="Enemy.cpp">
+      <Filter>ソース ファイル\敵</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -118,6 +127,9 @@
     </ClInclude>
     <ClInclude Include="stageManager.h">
       <Filter>ソース ファイル\ステージ関係</Filter>
+    </ClInclude>
+    <ClInclude Include="Enemy.h">
+      <Filter>ソース ファイル\敵</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

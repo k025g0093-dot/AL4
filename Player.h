@@ -52,12 +52,7 @@ public:
 
 #pragma endregion
 
-#pragma region プレイヤーのジャンプに関する処理
 
-	// プレイヤーのジャンプに関するもの
-	bool onGround_ = true;
-
-#pragma endregion
 
 	KamataEngine::Model* modelAttack_ = nullptr;
 	KamataEngine::WorldTransform worldTransformAttack_;
@@ -183,6 +178,8 @@ private: // プライベート関数群とかのその他
 	AttackPhase kAttackPhase_ = AttackPhase::kSave;
 	//攻撃ギミックの経過カウンター
 	uint32_t attackCounter_ = 0;
+
+	KamataEngine::Vector3 kAttakDirection{};
 
 	KnockbackPhase kKnockBack_ = KnockbackPhase::kStartKnockback;
 
