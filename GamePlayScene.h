@@ -6,6 +6,8 @@
 #include "MyMath.h"
 
 #include "Player.h"
+#include "BossEnemy.h"
+
 #include "MapChipField.h"//マップの読み込み
 #include "stageManager.h"
 #include "CameraController.h"
@@ -44,6 +46,7 @@ private:
 	//各種ポインタ関係
 	Fade* fade_ = nullptr;
 	Player* player_ = nullptr;
+	BossEnemy* bossEnemy_ = nullptr;
 	MapChipField* mapChipField_=nullptr;
 	stageManager* stageManager_ = nullptr;
 	CameraController* cameraController_;
@@ -52,6 +55,7 @@ private:
 
 	//各モデル読み込み口
 	KamataEngine::Model* modelPlayer_ = nullptr;//プレイヤーのモデル
+	KamataEngine::Model* modelBoss_ = nullptr;//プレイヤーのモデル
 	KamataEngine::Model* modelAttack_ = nullptr; // プレイヤーの攻撃モデル
 	KamataEngine::Model* modelMapBlock_ = nullptr; // マップのモデル
 	KamataEngine::Model* modelSkyDome_ = nullptr;  // マップのモデル

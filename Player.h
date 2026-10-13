@@ -193,6 +193,14 @@ private: // プライベート関数群とかのその他
 	// 旋回時間＜秒＞
 	static inline const float kTimeTrun = 0.3f;
 	static constexpr float kAttackSpeed = 0.8f;
+
+	// 突進の速さ（1フレームの移動量。1.0以上にすると幅1の壁をすり抜けるので注意）
+	static constexpr float kDashStartSpeed = 0.85f; // 出だしの速さ
+	static constexpr float kDashMinSpeed = 0.45f;   // 落ち着いた後の速さ
+	static constexpr float kDashEaseFrames = 12.0f; // 出だしから最低速度に落ちるまでのフレーム数
+	static constexpr int32_t kHitStopFrames = 4;    // 壁に当たったときに止めるフレーム数
+	int32_t hitStopTimer_ = 0;
+
 	// プライベート関数
 	void MovePlayer();
 

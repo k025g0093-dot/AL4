@@ -7,6 +7,7 @@ void GamePlayScene::InitIalize() {
 	// 各主newを行う
 	fade_ = new Fade;
 	player_ = new Player;
+	bossEnemy_ = new BossEnemy;
 	mapChipField_ = new MapChipField;
 	stageManager_ = new stageManager;
 	cameraController_ = new CameraController;
@@ -26,6 +27,7 @@ void GamePlayScene::InitIalize() {
 	modelMapBlock_ = Model::CreateFromOBJ("block", true); // マップのモデル
 
 	modelPlayer_ = Model::CreateFromOBJ("player", true);
+	modelBoss_ = Model::CreateFromOBJ("player", true);
 	modelAttack_ = Model::CreateFromOBJ("hit_effect", true); // プレイヤーの攻撃モデル
 	modelSkyDome_ = Model::CreateFromOBJ("skydome", true);
 
@@ -60,6 +62,9 @@ void GamePlayScene::InitIalize() {
 
 	GenerateFieldObjects();
 #pragma endregion
+
+
+	bossEnemy_->Initialize(&cameraController_->GetCamera(), modelBoss_);
 
 }
 
@@ -125,6 +130,7 @@ void GamePlayScene::Draw() {
 	}
 #pragma endregion
 	player_->Draw();
+	bossEnemy_->Draw();
 	Model::PostDraw();
 
 	fade_->Draw();
@@ -137,6 +143,7 @@ GamePlayScene::~GamePlayScene() {
 	delete modelPlayer_;
 	delete debugCamera_;
 	delete skyDome_;
+	delete modelBoss_;
 
 	for (std::vector<WorldTransform*>& worldTransformBlockRow : worldTransformBlocks_) {
 		for (WorldTransform* worldTransformBlock : worldTransformBlockRow) {
@@ -189,7 +196,7 @@ void GamePlayScene::RanGamePlayScene() {
 	}
 	skyDome_->Update();
 	player_->Update();
-
+	bossEnemy_->Update();
 
 	//カメラの更新処理
 	cameraController_->Update();

@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cassert>
 #include <numbers>
+#include <cmath>
 
 using namespace KamataEngine;
 Player::Player() {}
@@ -38,6 +39,12 @@ void Player::Initialize(
 }
 
 void Player::Update() {
+
+	// ヒットストップ中は何も進めない（行列は前のフレームのものがそのまま使われる）
+	if (hitStopTimer_ > 0) {
+		hitStopTimer_--;
+		return;
+	}
 
 #pragma region ビヘイビアの切り替え処理と初期化
 	if (behaviorRequest_ != Behavior::kUnknown) {
@@ -87,11 +94,11 @@ void Player::Update() {
 		MapCollsion(collisionMapInfo);
 
 		if (kAttackPhase_ == AttackPhase::kCharge &&
-			(collisionMapInfo.isWall || 
-				collisionMapInfo.isCeiling ||
-				collisionMapInfo.isFloor)
-			) {
-			kAttackPhase_ = AttackPhase::kAfterglow; // ★ kAfterglowに変更
+			(collisionMapInfo.isWall || collisionMapInfo.isCeiling || collisionMapInfo.isFloor)) {
+			kAttackPhase_ = AttackPhase::kAfterglow;
+			attackCounter_ = 0;               // 余韻を0から数え直す
+			velocity_ = { 0.0f, 0.0f, 0.0f };   // ぶつかったらその場で止める（滑らせない）
+			hitStopTimer_ = kHitStopFrames;   // 一瞬止めて手応えを出す
 		}
 
 		// 2. 壁衝突後の減衰
@@ -208,22 +215,37 @@ void Player::BehaviorAttackUpdate() {
 		if (attackCounter_ >= 10) {
 			kAttackPhase_ = AttackPhase::kCharge;
 			attackCounter_ = 0;
+
+			// 突進の向きを確定させる（斜めでも速さが変わらないように長さを1にする）
+			float length = std::sqrt(kAttakDirection.x * kAttakDirection.x + kAttakDirection.y * kAttakDirection.y);
+			if (length > 0.0f) {
+				kAttakDirection.x /= length;
+				kAttakDirection.y /= length;
+			}
+			else {
+				// 何も押していなければ、向いている方へ
+				kAttakDirection = { lrDirection_ == LRDirection::kRight ? 1.0f : -1.0f, 0.0f, 0.0f };
+			}
 		}
 		break;
 	}
 	case AttackPhase::kCharge: // 突進動作
 	{
+		// 出だしが一番速く、だんだん落ちて最低速度で落ち着く
+		float t = std::min(static_cast<float>(attackCounter_) / kDashEaseFrames, 1.0f);
+		float ease = 1.0f - (1.0f - t) * (1.0f - t);
+		float speed = kDashStartSpeed + (kDashMinSpeed - kDashStartSpeed) * ease;
 
-		velocity_.x = kAttackSpeed * kAttakDirection.x;
-		velocity_.y = kAttackSpeed * kAttakDirection.y;
+		velocity_.x = kAttakDirection.x * speed;
+		velocity_.y = kAttakDirection.y * speed;
 
-		velocity_.x = std::clamp(velocity_.x, -kLimitRunSpeed, kLimitRunSpeed);
-		velocity_.y = std::clamp(velocity_.y, -kLimitRunSpeed, kLimitRunSpeed);
-
-		//float t = static_cast<float>(attackCounter_) / 10.0f;
-		//worldTransform_.scale_.z = EaseOut(0.3f, 1.3f, t);
-		//worldTransform_.scale_.y = EaseOut(1.6f, 0.7f, t);
-
+		// 進んでいる向きに伸ばす（横の成分はz、縦の成分はyを伸ばす）
+		float stretch = 1.0f + 0.5f * (speed / kDashStartSpeed);
+		float squash = 1.0f / stretch;
+		float ax = std::fabs(kAttakDirection.x);
+		float ay = std::fabs(kAttakDirection.y);
+		worldTransform_.scale_.z = squash + (stretch - squash) * ax;
+		worldTransform_.scale_.y = squash + (stretch - squash) * ay;
 		break;
 	}
 	case AttackPhase::kAfterglow: // 余韻動作
