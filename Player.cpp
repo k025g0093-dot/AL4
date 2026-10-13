@@ -93,14 +93,6 @@ void Player::Update() {
 		// 1. 衝突判定と押し戻し量の計算
 		MapCollsion(collisionMapInfo);
 
-		if (kAttackPhase_ == AttackPhase::kCharge &&
-			(collisionMapInfo.isWall || collisionMapInfo.isCeiling || collisionMapInfo.isFloor)) {
-			kAttackPhase_ = AttackPhase::kAfterglow;
-			attackCounter_ = 0;               // 余韻を0から数え直す
-			velocity_ = { 0.0f, 0.0f, 0.0f };   // ぶつかったらその場で止める（滑らせない）
-			hitStopTimer_ = kHitStopFrames;   // 一瞬止めて手応えを出す
-		}
-
 		// 2. 壁衝突後の減衰
 		IsHitWall(collisionMapInfo);
 		// 3. 地面や天井の判定
@@ -109,20 +101,39 @@ void Player::Update() {
 		// 4. 最後に座標を確定させる
 		CheckedMove(collisionMapInfo);
 
-		// ★ ノックバック終了判定
-		if (kAttackPhase_ == AttackPhase::kAfterglow && attackCounter_ >= 10) {
-			velocity_.x = 0.0f; // 攻撃終了後に横方向の速度をリセット
-			velocity_.y = 0.0f; // 攻撃終了後に縦方向の速度をリセット
-			kAttakDirection = {0, 0, 0};
-			worldTransform_.scale_ = {1.0f, 1.0f, 1.0f};
-			kAttackPhase_ = AttackPhase::kSave; // 次の攻撃に備えてリセット
-			behaviorRequest_ = Behavior::kRoot;
+		if (kAttackPhase_ == AttackPhase::kCharge &&
+			(collisionMapInfo.isWall || collisionMapInfo.isCeiling || collisionMapInfo.isFloor)) {
+			kAttackPhase_ = AttackPhase::kAfterglow;
+			attackCounter_ = 0; // 余韻を0から数え直す
+
+			// 当たった面で突進の向きを反射して、跳ね返りの速度にする
+			Vector3 reflect = kAttakDirection;
+			if (collisionMapInfo.isWall) {
+				reflect.x = -reflect.x;
+			}
+			if (collisionMapInfo.isCeiling || collisionMapInfo.isFloor) {
+				reflect.y = -reflect.y;
+			}
+			velocity_ = reflect * kBounceSpeed;
+			//hitStopTimer_ = kHitStopFrames; // 一瞬止めてから跳ね返る
+		}
+		else {
+			// 余韻中に別の壁に当たったときも跳ね返る
+			BounceOnMap(collisionMapInfo, kBounceRestitution);
 		}
 
 		break;
 
 		// default:
 		//	break;
+	}
+
+	// 余韻が終わったら通常状態へ（跳ね返りの速度は残したまま）
+	if (kAttackPhase_ == AttackPhase::kAfterglow && attackCounter_ >= 10) {
+		kAttakDirection = { 0, 0, 0 };
+		worldTransform_.scale_ = { 1.0f, 1.0f, 1.0f };
+		kAttackPhase_ = AttackPhase::kSave; // 次の攻撃に備えてリセット
+		behaviorRequest_ = Behavior::kRoot;
 	}
 #pragma endregion
 
@@ -164,12 +175,8 @@ void Player::BehaviorRootUpdate() {
 	collisionMapInfo.velocity_ = velocity_;
 	// 1. 衝突判定と押し戻し量の計算
 	MapCollsion(collisionMapInfo);
-	// 2. 壁衝突後の減衰（MapCollsion の後に呼ぶことで isWall フラグが正しく参照される）
-	IsHitWall(collisionMapInfo);
-	// 3. 状態判定（座標を動かす前に、計算された移動量を使って判定を済ませる）
-	IsHitTop(collisionMapInfo);
-	IsGrounded(collisionMapInfo);
-	// 4. 最後に一回だけ座標を確定させる
+
+	BounceOnMap(collisionMapInfo, kBounceRestitution);
 	CheckedMove(collisionMapInfo);
 #pragma endregion
 
@@ -306,60 +313,36 @@ void Player::BehaviorKnockbackUpdate() {
 #pragma endregion
 
 void Player::MovePlayer() {
+	Input* input = Input::GetInstance();
 
-#pragma region プレイヤーの移動処理
-
-	if (Input::GetInstance()->PushKey(DIK_A) || Input::GetInstance()->PushKey(DIK_D) || Input::GetInstance()->PushKey(DIK_W) || Input::GetInstance()->PushKey(DIK_S)) {
-
-		if (Input::GetInstance()->PushKey(DIK_D)) {
-			if (lrDirection_ != LRDirection::kRight) {
-				lrDirection_ = LRDirection::kRight;
-
-				turnFistRotationY_ = worldTransform_.rotation_.y;
-				turnTimer_ = 1.0f;
-			}
-
-			if (velocity_.x < 0.0f) {
-				velocity_.x *= (1.0f - kAttenuation);
-			}
-
-			kAttakDirection.x = 1;
-		} else if (Input::GetInstance()->PushKey(DIK_A)) {
-
-			if (lrDirection_ != LRDirection::kLeft) {
-				lrDirection_ = LRDirection::kLeft;
-
-				turnFistRotationY_ = worldTransform_.rotation_.y;
-				turnTimer_ = 1.0f;
-			}
-
-			if (velocity_.x > 0.0f) {
-				velocity_.x *= (1.0f - kAttenuation);
-			}
-
-			kAttakDirection.x = -1;
-		} 
-		if (Input::GetInstance()->PushKey(DIK_W)) {
-
-			if (velocity_.y > 0.0f) {
-				velocity_.y *= (1.0f - kAttenuation);
-			}
-
-			kAttakDirection.y = 1;
-		} else if (Input::GetInstance()->PushKey(DIK_S)) {
-
-			if (velocity_.y > 0.0f) {
-				velocity_.y *= (1.0f - kAttenuation);
-			}
-
-			kAttakDirection.y = -1;
-		}
-		velocity_.x = std::clamp(velocity_.x, -kLimitRunSpeed, kLimitRunSpeed);
-	} else {
-		velocity_.x *= (1.0f - kAttenuation);
+	// 突進の向き：押しているキーから毎フレーム作り直す（離した軸が残らないように）
+	kAttakDirection = { 0.0f, 0.0f, 0.0f };
+	if (input->PushKey(DIK_D)) {
+		kAttakDirection.x += 1.0f;
+	}
+	if (input->PushKey(DIK_A)) {
+		kAttakDirection.x -= 1.0f;
+	}
+	if (input->PushKey(DIK_W)) {
+		kAttakDirection.y += 1.0f;
+	}
+	if (input->PushKey(DIK_S)) {
+		kAttakDirection.y -= 1.0f;
 	}
 
-#pragma endregion
+	// 見た目の向き（左右を押したときだけ旋回）
+	if (kAttakDirection.x != 0.0f) {
+		LRDirection next = kAttakDirection.x > 0.0f ? LRDirection::kRight : LRDirection::kLeft;
+		if (lrDirection_ != next) {
+			lrDirection_ = next;
+			turnFistRotationY_ = worldTransform_.rotation_.y;
+			turnTimer_ = 1.0f;
+		}
+	}
+
+	// 無重力：狙う入力では速度を変えず、少しずつ減速しながら漂う
+	velocity_.x *= kDriftDamping;
+	velocity_.y *= kDriftDamping;
 }
 
 void Player::CheckedMove(const CollisionMapInfo& info) { worldTransform_.translation_ += info.velocity_; }
@@ -453,6 +436,16 @@ void Player::CheckCollisionLeft(CollisionMapInfo& info) {
 			info.velocity_.x = std::max(0.0f, newVelocityX);
 			info.isWall = true;
 		}
+	}
+}
+
+void Player::BounceOnMap(const CollisionMapInfo& info, float restitution) {
+	// 左右の壁に当たったら横を、床か天井に当たったら縦を反転する（角なら両方）
+	if (info.isWall) {
+		velocity_.x = -velocity_.x * restitution;
+	}
+	if (info.isCeiling || info.isFloor) {
+		velocity_.y = -velocity_.y * restitution;
 	}
 }
 

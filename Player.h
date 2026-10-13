@@ -201,6 +201,13 @@ private: // プライベート関数群とかのその他
 	static constexpr int32_t kHitStopFrames = 4;    // 壁に当たったときに止めるフレーム数
 	int32_t hitStopTimer_ = 0;
 
+	static constexpr float kBounceSpeed = 0.35f;      // 突進で壁に当たったときの跳ね返りの速さ
+	static constexpr float kBounceRestitution = 0.8f; // 漂っている間に壁に当たったときの跳ね返り（1.0で減らない）
+	static constexpr float kDriftDamping = 0.99f;     // 漂っているときの1フレームごとの減速（1.0で減速なし）
+
+	// マップに当たった面で速度を反射させる
+	void BounceOnMap(const CollisionMapInfo& info, float restitution);
+
 	// プライベート関数
 	void MovePlayer();
 
