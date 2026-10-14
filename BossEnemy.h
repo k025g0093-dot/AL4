@@ -24,7 +24,7 @@ public:
 	KamataEngine::Vector3 GetWorldPodition();
 
 	AABB GetAABB();
-	void OnCollsion(const Player* player);
+	void OnCollsion( Player* player);
 
 	KamataEngine::WorldTransform& GetWorldTransform() { return worldTransform_; }
 

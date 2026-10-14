@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cassert>
 #include <numbers>
+#include "Player.h"
 using namespace KamataEngine;
 
 BossEnemy::BossEnemy() = default;
@@ -59,7 +60,10 @@ AABB BossEnemy::GetAABB() {
 	return aabb;
 }
 
-void BossEnemy::OnCollsion(const Player* player) { 
-	(void)player;
-	bossState.HP_--;
+void BossEnemy::OnCollsion( Player* player) {
+	if (player->isAttack()) {
+
+		bossState.HP_-=10;
+		return;
+	}
 }
