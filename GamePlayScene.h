@@ -48,6 +48,9 @@ private:
 
 	void BossToPlayerAABB();
 
+	// 体力などの情報をImGuiで表示する（デバッグ用）
+	void DrawDebugGui();
+
 	void DeathUpdate();
 
 	//各種ポインタ関係

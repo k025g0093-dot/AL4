@@ -80,18 +80,22 @@ public:
 	AABB GetAABB();
 	KamataEngine::WorldTransform& GetWorldTransform() { return worldTransform_; }
 	const KamataEngine::Vector3& GetVelocity() const { return velocity_; }
-	LRDirection GetLRDirection() const { return lrDirection_; }
-	bool IsDead() const { return isDead_; }
+	LRDirection GetLRDirection() const { return turn_.direction; }
+	bool IsDead() const { return status_.isDead; }
 	const bool isAttack();
 
 	// ============================================================
 	// 外から直接触られている変数
 	// ============================================================
 
-	int HP = 5;            // 体力（GamePlaySceneのGUIで表示）
-	bool isDead_ = false;  // 死亡フラグ（GamePlaySceneで見ている）
-	bool isHit = false;    // ボスに当てたか（BossEnemyで読み書きしている）
-	int invincibilityTime;
+	// 体力などの状態
+	struct Status {
+		int HP = 5;                 // 体力（GamePlaySceneのGUIで表示）
+		bool isDead = false;        // 死亡フラグ
+		bool isHit = false;         // この突進でボスに当てたか（BossEnemyで読み書きしている）
+		int invincibilityTime = 0;  // 残りの無敵フレーム
+	};
+	Status status_;
 
 private:
 	// ============================================================
@@ -207,22 +211,34 @@ private:
 	KamataEngine::Vector3 velocity_ = {};
 
 	// 向き
-	LRDirection lrDirection_ = LRDirection::kRight;
-	float turnFistRotationY_ = 0.0f; // 旋回開始時の角度
-	float turnTimer_ = 0.0f;         // 旋回タイマー
+	struct TurnState {
+		LRDirection direction = LRDirection::kRight; // 今向いている方
+		float firstRotationY = 0.0f;                 // 旋回開始時の角度
+		float timer = 0.0f;                          // 旋回タイマー（1→0）
+	};
+	TurnState turn_;
 
 	// 行動
-	Behavior behavior_ = Behavior::kRoot;
-	Behavior behaviorRequest_ = Behavior::kUnknown;
+	struct BehaviorState {
+		Behavior current = Behavior::kRoot;    // 今の行動
+		Behavior request = Behavior::kUnknown; // 次に切り替えたい行動
+	};
+	BehaviorState behavior_;
 
 	// 攻撃
-	AttackPhase kAttackPhase_ = AttackPhase::kSave;
-	uint32_t attackCounter_ = 0; // 攻撃の経過フレーム
-	KamataEngine::Vector3 kAttakDirection{};
-	int32_t hitStopTimer_ = 0;
+	struct AttackState {
+		AttackPhase phase = AttackPhase::kSave; // 今の段階
+		uint32_t counter = 0;                   // 段階ごとの経過フレーム
+		KamataEngine::Vector3 direction{};      // 突進の向き
+		int32_t hitStopTimer = 0;               // ヒットストップの残り（現在未使用）
+	};
+	AttackState attack_;
 
 	// ノックバック
-	bool isKnockBack_ = false;
-	KnockbackPhase kKnockBack_ = KnockbackPhase::kStartKnockback;
-	uint32_t knockbackCounter_ = 0;
+	struct KnockbackState {
+		bool isActive = false;                                    // ノックバック中か
+		KnockbackPhase phase = KnockbackPhase::kStartKnockback; // 今の段階
+		uint32_t counter = 0;                                     // 段階ごとの経過フレーム
+	};
+	KnockbackState knockback_;
 };

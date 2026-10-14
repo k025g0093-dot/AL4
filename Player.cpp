@@ -27,7 +27,7 @@ void Player::Initialize(KamataEngine::Model* model, KamataEngine::Model* modelAt
 	camera_ = camera;
 
 	velocity_ = {0.0f, 0.0f, 0.0f};
-	invincibilityTime = 60;
+	status_.invincibilityTime = 60;
 
 	// 見た目
 	worldTransform_.Initialize();
@@ -45,29 +45,29 @@ void Player::Initialize(KamataEngine::Model* model, KamataEngine::Model* modelAt
 
 void Player::Update() {
 	// 無敵時間を減らす
-	if (invincibilityTime > 0) {
-		invincibilityTime--;
+	if (status_.invincibilityTime > 0) {
+		status_.invincibilityTime--;
 	}
 
 	// 行動の切り替え
 	ApplyBehaviorRequest();
 
 	// 行動ごとの更新
-	switch (behavior_) {
+	switch (behavior_.current) {
 	case Behavior::kRoot:
 		BehaviorRootUpdate();
 
 		if (Input::GetInstance()->TriggerKey(DIK_SPACE)) {
-			behaviorRequest_ = Behavior::kAttack;
+			behavior_.request = Behavior::kAttack;
 		}
 		break;
 
 	case Behavior::kAttack:
-		if (isKnockBack_) {
+		if (knockback_.isActive) {
 			BehaviorKnockbackUpdate();
 		} else {
 			BehaviorAttackUpdate();
-			attackCounter_++;
+			attack_.counter++;
 		}
 		AttackMapCollision();
 		break;
@@ -77,11 +77,11 @@ void Player::Update() {
 	}
 
 	// 余韻が終わったら通常状態へ（跳ね返りの速度は残したまま）
-	if (kAttackPhase_ == AttackPhase::kAfterglow && attackCounter_ >= 10) {
-		kAttakDirection = {0.0f, 0.0f, 0.0f};
+	if (attack_.phase == AttackPhase::kAfterglow && attack_.counter >= 10) {
+		attack_.direction = {0.0f, 0.0f, 0.0f};
 		worldTransform_.scale_ = {1.0f, 1.0f, 1.0f};
-		kAttackPhase_ = AttackPhase::kSave; // 次の攻撃に備えてリセット
-		behaviorRequest_ = Behavior::kRoot;
+		attack_.phase = AttackPhase::kSave; // 次の攻撃に備えてリセット
+		behavior_.request = Behavior::kRoot;
 	}
 
 	UpdateMatrices();
@@ -89,29 +89,29 @@ void Player::Update() {
 
 void Player::Draw() {
 	model_->Draw(worldTransform_, *camera_);
-	if (behavior_ == Behavior::kAttack) {
+	if (behavior_.current == Behavior::kAttack) {
 		modelAttack_->Draw(worldTransformAttack_, *camera_);
 	}
 }
 
 // 行動の切り替えリクエストがあれば切り替えて、その行動の初期化をする
 void Player::ApplyBehaviorRequest() {
-	if (behaviorRequest_ == Behavior::kUnknown) {
+	if (behavior_.request == Behavior::kUnknown) {
 		return;
 	}
 
-	behavior_ = behaviorRequest_;
-	switch (behavior_) {
+	behavior_.current = behavior_.request;
+	switch (behavior_.current) {
 	case Behavior::kRoot:
 		break;
 	case Behavior::kAttack:
-		isHit = false;
-		attackCounter_ = 0;
+		status_.isHit = false;
+		attack_.counter = 0;
 		break;
 	default:
 		break;
 	}
-	behaviorRequest_ = Behavior::kUnknown;
+	behavior_.request = Behavior::kUnknown;
 }
 
 // 行列を計算して転送する
@@ -119,7 +119,7 @@ void Player::UpdateMatrices() {
 	worldTransform_.matWorld_ = MakeAffineMatrix(worldTransform_.scale_, worldTransform_.rotation_, worldTransform_.translation_);
 	worldTransform_.TransferMatrix();
 
-	if (behavior_ == Behavior::kAttack) {
+	if (behavior_.current == Behavior::kAttack) {
 		worldTransformAttack_.matWorld_ = MakeAffineMatrix(worldTransformAttack_.scale_, worldTransformAttack_.rotation_, worldTransformAttack_.translation_);
 		worldTransformAttack_.TransferMatrix();
 	}
@@ -147,17 +147,17 @@ void Player::BehaviorRootUpdate() {
 	CheckedMove(collisionMapInfo);
 
 	// 旋回
-	if (turnTimer_ > 0.0f) {
-		turnTimer_ -= 1.0f / 20.0f;
-		if (turnTimer_ < 0.0f) {
-			turnTimer_ = 0.0f;
+	if (turn_.timer > 0.0f) {
+		turn_.timer -= 1.0f / 20.0f;
+		if (turn_.timer < 0.0f) {
+			turn_.timer = 0.0f;
 		}
-		float t = 1.0f - turnTimer_;
+		float t = 1.0f - turn_.timer;
 
 		float destinationRotationYTable[] = {std::numbers::pi_v<float> / 2.0f, std::numbers::pi_v<float> * 3.0f / 2.0f};
-		float destinationRotationY = destinationRotationYTable[static_cast<uint32_t>(lrDirection_)];
+		float destinationRotationY = destinationRotationYTable[static_cast<uint32_t>(turn_.direction)];
 
-		worldTransform_.rotation_.y = turnFistRotationY_ + (destinationRotationY - turnFistRotationY_) * t;
+		worldTransform_.rotation_.y = turn_.firstRotationY + (destinationRotationY - turn_.firstRotationY) * t;
 	}
 }
 
@@ -165,27 +165,27 @@ void Player::MovePlayer() {
 	Input* input = Input::GetInstance();
 
 	// 突進の向き：押しているキーから毎フレーム作り直す（離した軸が残らないように）
-	kAttakDirection = {0.0f, 0.0f, 0.0f};
+	attack_.direction = {0.0f, 0.0f, 0.0f};
 	if (input->PushKey(DIK_D)) {
-		kAttakDirection.x += 1.0f;
+		attack_.direction.x += 1.0f;
 	}
 	if (input->PushKey(DIK_A)) {
-		kAttakDirection.x -= 1.0f;
+		attack_.direction.x -= 1.0f;
 	}
 	if (input->PushKey(DIK_W)) {
-		kAttakDirection.y += 1.0f;
+		attack_.direction.y += 1.0f;
 	}
 	if (input->PushKey(DIK_S)) {
-		kAttakDirection.y -= 1.0f;
+		attack_.direction.y -= 1.0f;
 	}
 
 	// 見た目の向き（左右を押したときだけ旋回）
-	if (kAttakDirection.x != 0.0f) {
-		LRDirection next = kAttakDirection.x > 0.0f ? LRDirection::kRight : LRDirection::kLeft;
-		if (lrDirection_ != next) {
-			lrDirection_ = next;
-			turnFistRotationY_ = worldTransform_.rotation_.y;
-			turnTimer_ = 1.0f;
+	if (attack_.direction.x != 0.0f) {
+		LRDirection next = attack_.direction.x > 0.0f ? LRDirection::kRight : LRDirection::kLeft;
+		if (turn_.direction != next) {
+			turn_.direction = next;
+			turn_.firstRotationY = worldTransform_.rotation_.y;
+			turn_.timer = 1.0f;
 		}
 	}
 
@@ -198,56 +198,56 @@ void Player::MovePlayer() {
 void Player::BehaviorAttackUpdate() {
 	// 攻撃モデルを向いている方の少し前に置く
 	Vector3 offset;
-	if (lrDirection_ == LRDirection::kRight) {
+	if (turn_.direction == LRDirection::kRight) {
 		offset = Vector3(0.8f, 0.0f, 0.0f);
-	} else if (lrDirection_ == LRDirection::kLeft) {
+	} else if (turn_.direction == LRDirection::kLeft) {
 		offset = Vector3(-0.8f, 0.0f, 0.0f);
 	}
 	worldTransformAttack_.translation_ = worldTransform_.translation_ + offset;
 	worldTransformAttack_.rotation_ = worldTransform_.rotation_;
 
-	switch (kAttackPhase_) {
+	switch (attack_.phase) {
 	case AttackPhase::kSave: { // 溜め
-		float t = static_cast<float>(attackCounter_) / 10.0f;
+		float t = static_cast<float>(attack_.counter) / 10.0f;
 		worldTransform_.scale_.z = EaseOut(1.0f, 0.3f, t);
 		worldTransform_.scale_.y = EaseOut(1.0f, 1.6f, t);
-		attackCounter_++;
-		if (attackCounter_ >= 10) {
-			kAttackPhase_ = AttackPhase::kCharge;
-			attackCounter_ = 0;
+		attack_.counter++;
+		if (attack_.counter >= 10) {
+			attack_.phase = AttackPhase::kCharge;
+			attack_.counter = 0;
 
 			// 突進の向きを確定させる（斜めでも速さが変わらないように長さを1にする）
-			float length = std::sqrt(kAttakDirection.x * kAttakDirection.x + kAttakDirection.y * kAttakDirection.y);
+			float length = std::sqrt(attack_.direction.x * attack_.direction.x + attack_.direction.y * attack_.direction.y);
 			if (length > 0.0f) {
-				kAttakDirection.x /= length;
-				kAttakDirection.y /= length;
+				attack_.direction.x /= length;
+				attack_.direction.y /= length;
 			} else {
 				// 何も押していなければ、向いている方へ
-				kAttakDirection = {lrDirection_ == LRDirection::kRight ? 1.0f : -1.0f, 0.0f, 0.0f};
+				attack_.direction = {turn_.direction == LRDirection::kRight ? 1.0f : -1.0f, 0.0f, 0.0f};
 			}
 		}
 		break;
 	}
 	case AttackPhase::kCharge: { // 突進
 		// 出だしが一番速く、だんだん落ちて最低速度で落ち着く
-		float t = std::min(static_cast<float>(attackCounter_) / kDashEaseFrames, 1.0f);
+		float t = std::min(static_cast<float>(attack_.counter) / kDashEaseFrames, 1.0f);
 		float ease = 1.0f - (1.0f - t) * (1.0f - t);
 		float speed = kDashStartSpeed + (kDashMinSpeed - kDashStartSpeed) * ease;
 
-		velocity_.x = kAttakDirection.x * speed;
-		velocity_.y = kAttakDirection.y * speed;
+		velocity_.x = attack_.direction.x * speed;
+		velocity_.y = attack_.direction.y * speed;
 
 		// 進んでいる向きに伸ばす（横の成分はz、縦の成分はyを伸ばす）
 		float stretch = 1.0f + 0.5f * (speed / kDashStartSpeed);
 		float squash = 1.0f / stretch;
-		float ax = std::fabs(kAttakDirection.x);
-		float ay = std::fabs(kAttakDirection.y);
+		float ax = std::fabs(attack_.direction.x);
+		float ay = std::fabs(attack_.direction.y);
 		worldTransform_.scale_.z = squash + (stretch - squash) * ax;
 		worldTransform_.scale_.y = squash + (stretch - squash) * ay;
 		break;
 	}
 	case AttackPhase::kAfterglow: { // 余韻
-		float t = static_cast<float>(attackCounter_) / 10.0f;
+		float t = static_cast<float>(attack_.counter) / 10.0f;
 		worldTransform_.scale_.z = EaseOut(1.3f, 1.0f, t);
 		worldTransform_.scale_.y = EaseOut(0.7f, 1.0f, t);
 		break;
@@ -273,13 +273,13 @@ void Player::AttackMapCollision() {
 	CheckedMove(collisionMapInfo);
 
 	bool hitMap = collisionMapInfo.isWall || collisionMapInfo.isCeiling || collisionMapInfo.isFloor;
-	if (kAttackPhase_ == AttackPhase::kCharge && hitMap) {
+	if (attack_.phase == AttackPhase::kCharge && hitMap) {
 		// 突進中に当たったら余韻へ
-		kAttackPhase_ = AttackPhase::kAfterglow;
-		attackCounter_ = 0; // 余韻を0から数え直す
+		attack_.phase = AttackPhase::kAfterglow;
+		attack_.counter = 0; // 余韻を0から数え直す
 
 		// 当たった面で突進の向きを反射して、跳ね返りの速度にする
-		Vector3 reflect = kAttakDirection;
+		Vector3 reflect = attack_.direction;
 		if (collisionMapInfo.isWall) {
 			reflect.x = -reflect.x;
 		}
@@ -295,34 +295,34 @@ void Player::AttackMapCollision() {
 
 // ---------- ノックバック ----------
 void Player::BehaviorKnockbackUpdate() {
-	switch (kKnockBack_) {
+	switch (knockback_.phase) {
 	case KnockbackPhase::kStartKnockback:
-		knockbackCounter_ = 0;
+		knockback_.counter = 0;
 		// 向いている方の逆へ飛ばす
-		if (lrDirection_ == LRDirection::kRight) {
+		if (turn_.direction == LRDirection::kRight) {
 			velocity_.x = -kKnockbackSpeed;
 		} else {
 			velocity_.x = kKnockbackSpeed;
 		}
-		kKnockBack_ = KnockbackPhase::kRestructureTheSystem;
+		knockback_.phase = KnockbackPhase::kRestructureTheSystem;
 		break;
 
 	case KnockbackPhase::kRestructureTheSystem:
 		// 減速
-		knockbackCounter_++;
+		knockback_.counter++;
 		velocity_.x *= (1.0f - kKnockbackAttenuation);
-		if (knockbackCounter_ >= kKnockbackDuration) {
-			kKnockBack_ = KnockbackPhase::kAfterglow;
-			knockbackCounter_ = 0;
+		if (knockback_.counter >= kKnockbackDuration) {
+			knockback_.phase = KnockbackPhase::kAfterglow;
+			knockback_.counter = 0;
 		}
 		break;
 
 	case KnockbackPhase::kAfterglow:
 		// 通常の移動に戻る前の待ち
-		knockbackCounter_++;
-		if (knockbackCounter_ >= kKnockbackAfterglowDuration) {
-			isKnockBack_ = false;
-			kKnockBack_ = KnockbackPhase::kStartKnockback; // 次のノックバックに備えて初期化
+		knockback_.counter++;
+		if (knockback_.counter >= kKnockbackAfterglowDuration) {
+			knockback_.isActive = false;
+			knockback_.phase = KnockbackPhase::kStartKnockback; // 次のノックバックに備えて初期化
 		}
 		break;
 
@@ -592,18 +592,19 @@ void Player::EnemyOnCollsion(const BossEnemy* bossEnemy) {
 		return;
 	}
 
-	if (invincibilityTime <= 0) {
-		HP--;
-		if (HP <= 0) {
-			isDead_ = true;
+	if (status_.invincibilityTime <= 0) {
+		status_.HP--;
+		status_.invincibilityTime = 60; 
+		if (status_.HP <= 0) {
+			status_.isDead = true;
 		}
 	}
 	velocity_ += Vector3(0, 0.4f, 0);
 }
 
 void Player::IsKnockBack() {
-	isKnockBack_ = true;
-	kKnockBack_ = KnockbackPhase::kStartKnockback; // フェーズをリセット
+	knockback_.isActive = true;
+	knockback_.phase = KnockbackPhase::kStartKnockback; // フェーズをリセット
 }
 
 // ============================================================
@@ -627,7 +628,7 @@ AABB Player::GetAABB() {
 	return aabb;
 }
 
-const bool Player::isAttack() { return behavior_ == Behavior::kAttack; }
+const bool Player::isAttack() { return behavior_.current == Behavior::kAttack; }
 
 // ============================================================
 // 便利関数
