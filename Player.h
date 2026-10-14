@@ -119,6 +119,10 @@ private:
 	void BehaviorKnockbackUpdate(); // ノックバックの更新
 
 	void MovePlayer();
+	void AttackMapCollision(); // 攻撃中（ノックバック中も含む）のマップ判定と移動
+
+	void ApplyBehaviorRequest(); // 行動の切り替えと初期化
+	void UpdateMatrices();       // 行列の計算と転送
 
 	// ============================================================
 	// マップとの当たり判定
