@@ -31,9 +31,6 @@ public:
 	bool isCollisionDisabled_ = false;
 	bool IsCollisionDisabled() const { return isCollisionDisabled_; }
 
-	// 体力の取得（GUI表示用）
-	int GetHP() const { return bossState.HP_; }
-
 private:
 
 	//==================================================

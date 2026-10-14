@@ -1,9 +1,5 @@
 #include "GamePlayScene.h"
 
-#ifdef USE_IMGUI
-#include <imgui.h>
-#endif
-
 using namespace KamataEngine;
 
 void GamePlayScene::InitIalize() {
@@ -122,32 +118,6 @@ void GamePlayScene::Updete() {
 	default:
 		break;
 	}
-
-	DrawDebugGui();
-}
-
-void GamePlayScene::DrawDebugGui() {
-#ifdef USE_IMGUI
-	ImGui::Begin("Status");
-
-	// プレイヤー
-	ImGui::Text("Player HP : %d", player_->HP);
-	ImGui::ProgressBar(static_cast<float>(player_->HP) / 5.0f, ImVec2(200.0f, 0.0f));
-	const Vector3& playerPos = player_->GetWorldTransform().translation_;
-	const Vector3& playerVel = player_->GetVelocity();
-	ImGui::Text("Player Pos : (%.2f, %.2f)", playerPos.x, playerPos.y);
-	ImGui::Text("Player Vel : (%.2f, %.2f)", playerVel.x, playerVel.y);
-
-	ImGui::Separator();
-
-	// ボス
-	ImGui::Text("Boss HP : %d", bossEnemy_->GetHP());
-	ImGui::ProgressBar(static_cast<float>(bossEnemy_->GetHP()) / 100.0f, ImVec2(200.0f, 0.0f));
-	const Vector3& bossPos = bossEnemy_->GetWorldTransform().translation_;
-	ImGui::Text("Boss Pos : (%.2f, %.2f)", bossPos.x, bossPos.y);
-
-	ImGui::End();
-#endif
 }
 
 void GamePlayScene::Draw() {
@@ -243,7 +213,7 @@ void GamePlayScene::RanGamePlayScene() {
 
 		phese_ = Phese::kDeht;
 	
-		deathParticles_->Initialize(modelParticl_, &cameraController_->GetCamera(), player_->GetWorldPodition());
+		deathParticles_->Initialize(modelPlayer_, &cameraController_->GetCamera(), player_->GetWorldPodition());
 
 	}
 

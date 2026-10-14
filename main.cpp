@@ -22,6 +22,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 	KamataEngine::Initialize(L"LE2B_29_ヤマト_ユウヤ_味方はぜんぶ、元は敵");
 	DirectXCommon* dxCommon = DirectXCommon::GetInstance();
+	ImGuiManager* imguiManager = ImGuiManager::GetInstance();
 
 	scene = Scene::kTitle;
 	title_ = new TitleScene;
@@ -35,13 +36,22 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 		// 更新処理
 
+		// ImGuiの受付開始（これより後でないとImGui::Beginなどは呼べない）
+		imguiManager->Begin();
+
 		ChangeScene();
 		UpdateScene();
+
+		// ImGuiの受付終了
+		imguiManager->End();
 
 		// 描画処理
 		dxCommon->PreDraw();
 
 		DrawScene();
+
+		// ImGuiの描画（一番手前に出すので最後）
+		imguiManager->Draw();
 
 		dxCommon->PostDraw();
 	}
