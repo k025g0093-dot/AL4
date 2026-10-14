@@ -648,23 +648,19 @@ AABB Player::GetAABB() {
 	return aabb;
 }
 
-void Player::EnemyOnCollsion(const Enemy* enemy) {
+void Player::EnemyOnCollsion(const BossEnemy* bossEnemy) {
 	if (isAttack()) {
 		return;
 	}
-	(void)enemy;
-	isDead_ = true;
+	(void)bossEnemy;
+	HP--;
+	if (HP <= 0) {
+		isDead_ = true;
+	}
 	velocity_ += Vector3(0, 0.4f, 0);
 }
 
-void Player::ShieldEnemyOnCollsion(const ShieldEnemy* shieldEnemy) {
-	if (isAttack()) {
-		return;
-	}
-	(void)shieldEnemy;
-	isDead_ = true;
-	velocity_ += Vector3(0, 0.4f, 0);
-}
+
 
 float Player::EaseOut(float start, float end, float t) {
 	// t は 0〜1 の値

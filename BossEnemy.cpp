@@ -19,8 +19,12 @@ void BossEnemy::Initialize(Camera* camera, Model* model) {
 	m_camera = camera;
 	m_model = model;
 
+	bossState.HP_ = 100;
+
+
 	worldTransform_.Initialize();
-	worldTransform_.translation_.y = 2.0f;
+	worldTransform_.translation_.y = 5.0f;
+	worldTransform_.translation_.x = 10.0f;
 	worldTransform_.scale_.y = 1.0f;
 
 }
@@ -32,3 +36,30 @@ void BossEnemy::Update() {
 }
 
 void BossEnemy::Draw() { m_model->Draw(worldTransform_, *m_camera); }
+
+
+Vector3 BossEnemy::GetWorldPodition() {
+
+	Vector3 worldPos;
+	worldPos.x = worldTransform_.matWorld_.m[3][0];
+	worldPos.y = worldTransform_.matWorld_.m[3][1];
+	worldPos.z = worldTransform_.matWorld_.m[3][2];
+	return worldPos;
+}
+
+AABB BossEnemy::GetAABB() {
+
+	Vector3 worldPos = GetWorldPodition();
+
+	AABB aabb;
+
+	aabb.min = {worldPos.x - worldTransform_.scale_.x / 2.0f, worldPos.y - worldTransform_.scale_.y / 2.0f, worldPos.z - worldTransform_.scale_.z / 2.0f};
+	aabb.max = {worldPos.x + worldTransform_.scale_.x / 2.0f, worldPos.y + worldTransform_.scale_.y / 2.0f, worldPos.z + worldTransform_.scale_.z / 2.0f};
+
+	return aabb;
+}
+
+void BossEnemy::OnCollsion(const Player* player) { 
+	(void)player;
+	bossState.HP_--;
+}

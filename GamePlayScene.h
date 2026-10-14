@@ -12,6 +12,7 @@
 #include "stageManager.h"
 #include "CameraController.h"
 #include "SkyDome.h"
+#include "Collision.h"
 
 class GamePlayScene : public SceneManager {
 public:
@@ -43,6 +44,15 @@ private:
 	void RanGamePlayScene();
 	void StageUpdate();
 
+	void CheckAllCollisions();
+
+	void BossToPlayerAABB();
+
+	// 体力などの情報をImGuiで表示する（デバッグ用）
+	void DrawDebugGui();
+
+	void DeathUpdate();
+
 	//各種ポインタ関係
 	Fade* fade_ = nullptr;
 	Player* player_ = nullptr;
@@ -51,6 +61,8 @@ private:
 	stageManager* stageManager_ = nullptr;
 	CameraController* cameraController_;
 	SkyDome* skyDome_ = nullptr;
+	DeathParticles* deathParticles_ = nullptr;
+
 	//KamataEngineを使う変数の宣言
 
 	//各モデル読み込み口
@@ -59,6 +71,7 @@ private:
 	KamataEngine::Model* modelAttack_ = nullptr; // プレイヤーの攻撃モデル
 	KamataEngine::Model* modelMapBlock_ = nullptr; // マップのモデル
 	KamataEngine::Model* modelSkyDome_ = nullptr;  // マップのモデル
+	KamataEngine::Model* modelParticl_ = nullptr;  // プレイヤーの死亡時に出るパーティクル
 
 	// ワールドトランスフォーム
 	KamataEngine::WorldTransform worldTransform_;

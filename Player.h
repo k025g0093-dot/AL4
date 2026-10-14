@@ -31,8 +31,7 @@ enum class KnockbackPhase {
 };
 
 class MapChipField;
-class Enemy;
-class ShieldEnemy;
+class BossEnemy;
 
 class Player {
 
@@ -52,7 +51,7 @@ public:
 
 #pragma endregion
 
-
+	int HP = 5;
 
 	KamataEngine::Model* modelAttack_ = nullptr;
 	KamataEngine::WorldTransform worldTransformAttack_;
@@ -68,8 +67,7 @@ public:
 	void Update();
 
 	void Draw();
-	void EnemyOnCollsion(const Enemy* enemy);
-	void ShieldEnemyOnCollsion(const ShieldEnemy* shieldEnemy);
+	void EnemyOnCollsion(const BossEnemy* bossEnemy);
 
 	bool isDead_=false;
 	bool IsDead() const { return isDead_; };
@@ -159,19 +157,6 @@ private: // プライベート関数群とかのその他
 
 	// 壁接着時の速度減衰率
 	static inline const float kAttenuationWall = 0.1f;
-
-#pragma endregion
-
-#pragma region ジャンプに関するもの
-
-	// 重力加速度
-	static inline const float kGravityAcceleration = 0.03f;
-
-	// 最大落下速度
-	static inline const float kLimitFallSpeed = 0.5f;
-
-	// ジャンプ初速
-	static inline const float kJumpAcceleration = 0.6f;
 
 #pragma endregion
 

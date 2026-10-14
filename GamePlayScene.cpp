@@ -1,5 +1,9 @@
 #include "GamePlayScene.h"
 
+#ifdef USE_IMGUI
+#include <imgui.h>
+#endif
+
 using namespace KamataEngine;
 
 void GamePlayScene::InitIalize() {
@@ -13,7 +17,7 @@ void GamePlayScene::InitIalize() {
 	cameraController_ = new CameraController;
 	debugCamera_ = new DebugCamera(1280, 720);
 	skyDome_ = new SkyDome();
-
+	deathParticles_ = new DeathParticles();
 #pragma region 基礎システムの初期化
 	worldTransform_.Initialize();
 	camera_.Initialize();
@@ -39,7 +43,6 @@ void GamePlayScene::InitIalize() {
 
 	skyDome_->Initialize(modelSkyDome_);
 
-
 #pragma region カメラコントローラーの設定
 	cameraController_->Initialize();
 	cameraController_->SetTarget(player_);
@@ -63,9 +66,7 @@ void GamePlayScene::InitIalize() {
 	GenerateFieldObjects();
 #pragma endregion
 
-
 	bossEnemy_->Initialize(&cameraController_->GetCamera(), modelBoss_);
-
 }
 
 void GamePlayScene::Updete() {
@@ -101,6 +102,17 @@ void GamePlayScene::Updete() {
 		}
 		break;
 	}
+	case Phese::kDeht: // 死亡時
+	{
+
+		// ゲームオーバ中の処理
+		DeathUpdate();
+		// 右端の処理：パーティクルもフェードも終わったらシーン終了
+		if (deathParticles_->IsFinished() && fade_->IsFinished()) {
+			fade_->Start(Fade::Status::FadeOut, 1.0f);
+			phese_ = Phese::kFadeOut;
+		}
+	} break;
 
 	case Phese::kFadeOut:
 		if (fade_->IsFinished()) {
@@ -110,6 +122,32 @@ void GamePlayScene::Updete() {
 	default:
 		break;
 	}
+
+	DrawDebugGui();
+}
+
+void GamePlayScene::DrawDebugGui() {
+#ifdef USE_IMGUI
+	ImGui::Begin("Status");
+
+	// プレイヤー
+	ImGui::Text("Player HP : %d", player_->HP);
+	ImGui::ProgressBar(static_cast<float>(player_->HP) / 5.0f, ImVec2(200.0f, 0.0f));
+	const Vector3& playerPos = player_->GetWorldTransform().translation_;
+	const Vector3& playerVel = player_->GetVelocity();
+	ImGui::Text("Player Pos : (%.2f, %.2f)", playerPos.x, playerPos.y);
+	ImGui::Text("Player Vel : (%.2f, %.2f)", playerVel.x, playerVel.y);
+
+	ImGui::Separator();
+
+	// ボス
+	ImGui::Text("Boss HP : %d", bossEnemy_->GetHP());
+	ImGui::ProgressBar(static_cast<float>(bossEnemy_->GetHP()) / 100.0f, ImVec2(200.0f, 0.0f));
+	const Vector3& bossPos = bossEnemy_->GetWorldTransform().translation_;
+	ImGui::Text("Boss Pos : (%.2f, %.2f)", bossPos.x, bossPos.y);
+
+	ImGui::End();
+#endif
 }
 
 void GamePlayScene::Draw() {
@@ -131,6 +169,9 @@ void GamePlayScene::Draw() {
 #pragma endregion
 	player_->Draw();
 	bossEnemy_->Draw();
+	if (!deathParticles_->isFinished_) {
+		deathParticles_->Draw();
+	}
 	Model::PostDraw();
 
 	fade_->Draw();
@@ -144,6 +185,7 @@ GamePlayScene::~GamePlayScene() {
 	delete debugCamera_;
 	delete skyDome_;
 	delete modelBoss_;
+	delete deathParticles_;
 
 	for (std::vector<WorldTransform*>& worldTransformBlockRow : worldTransformBlocks_) {
 		for (WorldTransform* worldTransformBlock : worldTransformBlockRow) {
@@ -151,11 +193,9 @@ GamePlayScene::~GamePlayScene() {
 		}
 	}
 	worldTransformBlocks_.clear();
-
 }
 
-void GamePlayScene::StageUpdate() 
-{
+void GamePlayScene::StageUpdate() {
 
 	cameraController_->Update();
 
@@ -174,7 +214,6 @@ void GamePlayScene::StageUpdate()
 			worldTransformBlock->TransferMatrix();
 		}
 	}
-
 }
 
 void GamePlayScene::RanGamePlayScene() {
@@ -198,12 +237,21 @@ void GamePlayScene::RanGamePlayScene() {
 	player_->Update();
 	bossEnemy_->Update();
 
-	//カメラの更新処理
+	CheckAllCollisions();
+
+	if (player_->isDead_) {
+
+		phese_ = Phese::kDeht;
+	
+		deathParticles_->Initialize(modelParticl_, &cameraController_->GetCamera(), player_->GetWorldPodition());
+
+	}
+
+	// カメラの更新処理
 	cameraController_->Update();
 }
 
-void GamePlayScene::GenerateFieldObjects() 
-{
+void GamePlayScene::GenerateFieldObjects() {
 	// 要素数
 	uint32_t numBlockVirtical = mapChipField_->GetNumBlockVirtical();
 	uint32_t mumBlockHorizontal = mapChipField_->GetNumBlockHorizontal();
@@ -235,9 +283,37 @@ void GamePlayScene::GenerateFieldObjects()
 				player_->Initialize(modelPlayer_, modelAttack_, &cameraController_->GetCamera(), playerPosition);
 				player_->SetMapChipFiled(mapChipField_); // マップのデータをプレイヤーに渡す
 
-				// デスパーティクルもプレイヤーと同じ位置に潜ませておくならここ
+				deathParticles_->Initialize(modelPlayer_, &cameraController_->GetCamera(), playerPosition);
+
 			} break;
 			}
 		}
+	}
+}
+
+void GamePlayScene::CheckAllCollisions() { BossToPlayerAABB(); }
+
+void GamePlayScene::BossToPlayerAABB() {
+	AABB aabb1, aabb2;
+	aabb1 = player_->GetAABB();
+	aabb2 = bossEnemy_->GetAABB();
+	if (IsCollision(aabb1, aabb2)) {
+		player_->EnemyOnCollsion(bossEnemy_);
+		bossEnemy_->OnCollsion(player_);
+	}
+}
+
+// デス演出更新処理
+void GamePlayScene::DeathUpdate() {
+
+	bossEnemy_->Update();
+
+
+	// スカイドームの更新処理
+	skyDome_->Update();
+
+	// パーティクルの処理
+	if (!deathParticles_->isFinished_) {
+		deathParticles_->Update();
 	}
 }
