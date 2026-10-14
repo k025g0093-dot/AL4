@@ -9,6 +9,8 @@
 #include <cmath>
 #include <numbers>
 #include "Player.h"
+
+
 using namespace KamataEngine;
 
 BossEnemy::BossEnemy() = default;
@@ -27,16 +29,26 @@ void BossEnemy::Initialize(Camera* camera, Model* model) {
 
 
 	worldTransform_.Initialize();
-	worldTransform_.translation_.y = 5.0f;
-	worldTransform_.translation_.x = 10.0f;
+	// 大きさ2でもブロックに重ならない、開けた場所に置く
+	worldTransform_.translation_.x = 28.0f;
+	worldTransform_.translation_.y = 11.0f;
 	// 見た目の大きさを当たり判定に合わせる（ずれると壁にめり込んで見える）
 	worldTransform_.scale_ = {kWidth, kHight, kWidth};
 
-	// 最初は右へ進む
-	velocity_ = {kMoveSpeed, 0.0f, 0.0f};
+
+	// 最初は右上へ進む（斜めでも速さが kMoveSpeed になるように、向きの長さを1にしてから掛ける）
+	float rdian = RandomEngine::GetRandomFloat(0, std::numbers::pi_v<float>*2.0f);
+	const float kDiagonalX = std::cos(rdian);
+	const float kDiagonalY = std::sin(rdian);
+	velocity_ = {kMoveSpeed * kDiagonalX, kMoveSpeed * kDiagonalY, 0.0f};
 }
 
 void BossEnemy::Update() {
+	if (directionChangeTimer_ <= 0) {
+		ChooseRandomDirection();
+		directionChangeTimer_ = RandomEngine::GetRandomInt(kDirectionChangeMinFrames, kDirectionChangeMaxFrames);
+	}
+	directionChangeTimer_--;
 
 	Move();
 
@@ -73,6 +85,13 @@ void BossEnemy::OnCollsion( Player* player) {
 
 		bossState.HP_ -= 10;
 		player->status_.isHit = true;
+
+			// 最初は右上へ進む（斜めでも速さが kMoveSpeed になるように、向きの長さを1にしてから掛ける）
+		float rdian = RandomEngine::GetRandomFloat(0, std::numbers::pi_v<float> * 2.0f);
+		const float kDiagonalX = std::cos(rdian);
+		const float kDiagonalY = std::sin(rdian);
+		velocity_ = {(kMoveSpeed * kDiagonalX) * 8.0f, (kMoveSpeed * kDiagonalY) * 8.0f, 0.0f};
+
 		return;
 	}
 }
@@ -88,16 +107,63 @@ void BossEnemy::Move() {
 		return;
 	}
 
-	//  今の速度で動いたらどこに当たるか調べて、めり込まない速度に直す
-	CollisionMapInfo collisionMapInfo;
-	collisionMapInfo.velocity_ = velocity_;
-	MapCollsion(collisionMapInfo);
+	Vector3& position = worldTransform_.translation_;
 
-	//  直した速度で動く
-	CheckedMove(collisionMapInfo);
+	// 横と縦を別々に動かす。
+	// 同時に動かすと、斜めにブロックの角へ入ったときに「横と縦のどちらで当たったか」が分からなくなるため。
 
-	//  壁に当たっていたら向きを反転する（次のフレームから逆に進む）
-	BounceOnMap(collisionMapInfo, kRestitution);
+	//  横だけ動かして、重なったら戻して横の向きを反転
+	position.x += velocity_.x;
+	if (HitsBlock(position)) {
+		position.x -= velocity_.x;
+		velocity_.x = -velocity_.x * kRestitution;
+	}
+
+	//  縦だけ動かして、重なったら戻して縦の向きを反転
+	position.y += velocity_.y;
+	if (HitsBlock(position)) {
+		position.y -= velocity_.y;
+		velocity_.y = -velocity_.y * kRestitution;
+	}
+}
+
+void BossEnemy::ChooseRandomDirection() {
+	// 最初は右上へ進む（斜めでも速さが kMoveSpeed になるように、向きの長さを1にしてから掛ける）
+	float rdian = RandomEngine::GetRandomFloat(0, std::numbers::pi_v<float> * 2.0f);
+	const float kDiagonalX = std::cos(rdian);
+	const float kDiagonalY = std::sin(rdian);
+	velocity_ = {kMoveSpeed * kDiagonalX, kMoveSpeed * kDiagonalY, 0.0f};
+}
+
+bool BossEnemy::HitsBlock(const Vector3& center) const {
+	// ちょうど辺が接しているだけのときは重なりにしない（ほんの少しだけ内側で調べる）
+	const float kEpsilon = 0.001f;
+	const float left = center.x - kWidth / 2.0f + kEpsilon;
+	const float right = center.x + kWidth / 2.0f - kEpsilon;
+	const float bottom = center.y - kHight / 2.0f + kEpsilon;
+	const float top = center.y + kHight / 2.0f - kEpsilon;
+
+	// マップの外に出ていたら壁として扱う（マス番号がマイナスになって壊れるのを防ぐ）
+	const float mapLeft = -MapChipField::kBlockWidth / 2.0f;
+	const float mapBottom = -MapChipField::kBlockHeight / 2.0f;
+	const float mapRight = MapChipField::kBlockWidth * static_cast<float>(MapChipField::kNumBlockHorizontal) + mapLeft;
+	const float mapTop = MapChipField::kBlockHeight * static_cast<float>(MapChipField::kNumBlockVirtical) + mapBottom;
+	if (left < mapLeft || bottom < mapBottom || right >= mapRight || top >= mapTop) {
+		return true;
+	}
+
+	// ボスの四角が覆うマスを左上から右下まで全部調べる（角だけだと間のブロックを見逃すため）
+	MapChipField::IndexSet leftTop = mapChipField_->GetMapChipIndexSetByPosition({left, top, 0.0f});
+	MapChipField::IndexSet rightBottom = mapChipField_->GetMapChipIndexSetByPosition({right, bottom, 0.0f});
+
+	for (uint32_t y = leftTop.yIndex; y <= rightBottom.yIndex; ++y) {
+		for (uint32_t x = leftTop.xIndex; x <= rightBottom.xIndex; ++x) {
+			if (mapChipField_->GetMapChipTypeByIndex(x, y) == MapChipType::kBlock) {
+				return true;
+			}
+		}
+	}
+	return false;
 }
 
 // ============================================================

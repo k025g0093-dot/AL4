@@ -599,7 +599,7 @@ void Player::EnemyOnCollsion(const BossEnemy* bossEnemy) {
 			status_.isDead = true;
 		}
 	}
-	velocity_ += Vector3(0, 0.4f, 0);
+	velocity_ += Vector3(0, 0.1f, 0);
 }
 
 void Player::IsKnockBack() {

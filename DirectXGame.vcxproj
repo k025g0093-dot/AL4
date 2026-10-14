@@ -189,6 +189,7 @@ xcopy "$(ProjectDir)..\External\KamataEngine\shaders" "$(ProjectDir)Resources\En
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MapChipField.cpp" />
     <ClCompile Include="Player.cpp" />
+    <ClCompile Include="RandomEngine.cpp" />
     <ClCompile Include="SceneManager.cpp" />
     <ClCompile Include="SkyDome.cpp" />
     <ClCompile Include="stageManager.cpp" />
@@ -209,6 +210,7 @@ xcopy "$(ProjectDir)..\External\KamataEngine\shaders" "$(ProjectDir)Resources\En
     <ClInclude Include="GamePlayScene.h" />
     <ClInclude Include="MapChipField.h" />
     <ClInclude Include="Player.h" />
+    <ClInclude Include="RandomEngine.h" />
     <ClInclude Include="SceneManager.h" />
     <ClInclude Include="SkyDome.h" />
     <ClInclude Include="stageManager.h" />

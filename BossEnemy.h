@@ -1,6 +1,7 @@
 #pragma once
 #include "AABB.h"
 #include "KamataEngine.h"
+#include "RandomEngine.h"
 
 class Player;
 class MapChipField;
@@ -76,8 +77,11 @@ private:
 	// 移動
 	// ============================================================
 
-	// 速度の分だけ動いて、壁に当たったら跳ね返る
+	// 速度の分だけ動いて、壁に当たったら跳ね返る（横と縦を別々に動かす）
 	void Move();
+	void ChooseRandomDirection();
+	// その位置に置いたとき、ボスの四角がブロックに1マスでも重なるか
+	bool HitsBlock(const KamataEngine::Vector3& center) const;
 
 	// ============================================================
 	// マップとの当たり判定
@@ -104,7 +108,7 @@ private:
 	// ============================================================
 
 	// 当たり判定のサイズ（見た目の大きさもこれに合わせる）
-	// ※1.0より大きくすると、角と角の間に1マスのブロックが入っても気付けなくなるので注意
+	// Move()は重なるマスを全部調べるので、1.0より大きくしても大丈夫
 	static inline const float kWidth = 2.0f;
 	static inline const float kHight = 2.0f;
 
@@ -115,6 +119,11 @@ private:
 	// マップに当たったときの減速
 	static inline const float kAttenuationLanding = 0.01f; // 着地時の速度減衰率
 	static inline const float kAttenuationWall = 0.1f;     // 壁接触時の速度減衰率
+
+	static inline int directionChangeTimer_{};
+	static inline int kDirectionChangeMinFrames=40;
+	static inline int kDirectionChangeMaxFrames=120;
+
 
 	//==================================================
 	// private variables
