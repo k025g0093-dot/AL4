@@ -21,7 +21,7 @@ void Player::Initialize(
 	worldTransform_.translation_ = {0.0f, 0.0f, 0.0f};
 
 	velocity_ = {0.0f, 0.0f, 0.0f};
-
+	invincibilityTime = 60;
 	assert(model);
 	assert(modelAttack);
 	modelAttack_ = modelAttack;
@@ -40,10 +40,11 @@ void Player::Initialize(
 
 void Player::Update() {
 
-	// ヒットストップ中は何も進めない（行列は前のフレームのものがそのまま使われる）
-	if (hitStopTimer_ > 0) {
-		hitStopTimer_--;
-		return;
+
+	if (invincibilityTime>=0) {
+		invincibilityTime--;
+		if (invincibilityTime <= 0)
+			invincibilityTime = 0;
 	}
 
 #pragma region ビヘイビアの切り替え処理と初期化
@@ -54,6 +55,7 @@ void Player::Update() {
 		case Behavior::kRoot:
 			break;
 		case Behavior::kAttack:
+			isHit = false;
 			attackCounter_ = 0;
 			break;
 		default:
@@ -653,10 +655,13 @@ void Player::EnemyOnCollsion(const BossEnemy* bossEnemy) {
 		return;
 	}
 	(void)bossEnemy;
-	HP--;
-	if (HP <= 0) {
-		isDead_ = true;
-	}
+	if (invincibilityTime <= 0) {
+
+		HP--;
+		if (HP <= 0) {
+			isDead_ = true;
+		}
+	} 
 	velocity_ += Vector3(0, 0.4f, 0);
 }
 
@@ -669,11 +674,9 @@ float Player::EaseOut(float start, float end, float t) {
 }
 
 const bool Player::isAttack() {
-
 	if (behavior_ == Behavior::kAttack) {
 		return true;
 	}
-
 	return false;
 }
 

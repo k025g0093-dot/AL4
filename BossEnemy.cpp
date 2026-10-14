@@ -61,9 +61,10 @@ AABB BossEnemy::GetAABB() {
 }
 
 void BossEnemy::OnCollsion( Player* player) {
-	if (player->isAttack()) {
+	if (player->isAttack()||!player->isHit) {
 
-		bossState.HP_-=10;
+		bossState.HP_ -= 10;
+		player->isHit = true;
 		return;
 	}
 }
