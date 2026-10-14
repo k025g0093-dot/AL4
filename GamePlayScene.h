@@ -6,10 +6,13 @@
 #include "MyMath.h"
 
 #include "Player.h"
+#include "BossEnemy.h"
+
 #include "MapChipField.h"//マップの読み込み
 #include "stageManager.h"
 #include "CameraController.h"
 #include "SkyDome.h"
+#include "Collision.h"
 
 class GamePlayScene : public SceneManager {
 public:
@@ -41,20 +44,34 @@ private:
 	void RanGamePlayScene();
 	void StageUpdate();
 
+	void CheckAllCollisions();
+
+	void BossToPlayerAABB();
+
+	// 体力などの情報をImGuiで表示する（デバッグ用）
+	void DrawDebugGui();
+
+	void DeathUpdate();
+
 	//各種ポインタ関係
 	Fade* fade_ = nullptr;
 	Player* player_ = nullptr;
+	BossEnemy* bossEnemy_ = nullptr;
 	MapChipField* mapChipField_=nullptr;
 	stageManager* stageManager_ = nullptr;
 	CameraController* cameraController_;
 	SkyDome* skyDome_ = nullptr;
+	DeathParticles* deathParticles_ = nullptr;
+
 	//KamataEngineを使う変数の宣言
 
 	//各モデル読み込み口
 	KamataEngine::Model* modelPlayer_ = nullptr;//プレイヤーのモデル
+	KamataEngine::Model* modelBoss_ = nullptr;//プレイヤーのモデル
 	KamataEngine::Model* modelAttack_ = nullptr; // プレイヤーの攻撃モデル
 	KamataEngine::Model* modelMapBlock_ = nullptr; // マップのモデル
 	KamataEngine::Model* modelSkyDome_ = nullptr;  // マップのモデル
+	KamataEngine::Model* modelParticl_ = nullptr;  // プレイヤーの死亡時に出るパーティクル
 
 	// ワールドトランスフォーム
 	KamataEngine::WorldTransform worldTransform_;

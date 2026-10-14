@@ -122,7 +122,7 @@ MapChipField::IndexSet MapChipField::GetMapChipIndexSetByPosition(const KamataEn
 	IndexSet indexSet{};
 	indexSet.xIndex = static_cast<uint32_t>((position.x + kBlockWidth / 2) / kBlockWidth);
 
-	indexSet.yIndex = static_cast<uint32_t>(kNumBlockVirtical - 1 - (uint32_t)(position.y / kBlockHeight));
+	indexSet.yIndex = kNumBlockVirtical - 1 - static_cast<uint32_t>((position.y + kBlockHeight / 2) / kBlockHeight);
 	return indexSet;
 }
 
