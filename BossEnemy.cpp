@@ -29,11 +29,16 @@ void BossEnemy::Initialize(Camera* camera, Model* model) {
 	worldTransform_.Initialize();
 	worldTransform_.translation_.y = 5.0f;
 	worldTransform_.translation_.x = 10.0f;
-	worldTransform_.scale_ = {2.0f,2.0f,2.0f};
+	// 見た目の大きさを当たり判定に合わせる（ずれると壁にめり込んで見える）
+	worldTransform_.scale_ = {kWidth, kHight, kWidth};
 
+	// 最初は右へ進む
+	velocity_ = {kMoveSpeed, 0.0f, 0.0f};
 }
 
 void BossEnemy::Update() {
+
+	Move();
 
 	worldTransform_.matWorld_ = MakeAffineMatrix(worldTransform_.scale_, worldTransform_.rotation_, worldTransform_.translation_);
 	worldTransform_.TransferMatrix();
@@ -72,6 +77,28 @@ void BossEnemy::OnCollsion( Player* player) {
 	}
 }
 
+
+// ============================================================
+// 移動
+// ============================================================
+
+void BossEnemy::Move() {
+	// マップを受け取っていなければ動かない（SetMapChipFieldの呼び忘れ対策）
+	if (!mapChipField_) {
+		return;
+	}
+
+	//  今の速度で動いたらどこに当たるか調べて、めり込まない速度に直す
+	CollisionMapInfo collisionMapInfo;
+	collisionMapInfo.velocity_ = velocity_;
+	MapCollsion(collisionMapInfo);
+
+	//  直した速度で動く
+	CheckedMove(collisionMapInfo);
+
+	//  壁に当たっていたら向きを反転する（次のフレームから逆に進む）
+	BounceOnMap(collisionMapInfo, kRestitution);
+}
 
 // ============================================================
 // マップとの当たり判定

@@ -67,6 +67,7 @@ void GamePlayScene::InitIalize() {
 #pragma endregion
 
 	bossEnemy_->Initialize(&cameraController_->GetCamera(), modelBoss_);
+	bossEnemy_->SetMapChipField(mapChipField_); // マップのデータをボスに渡す
 }
 
 void GamePlayScene::Updete() {

@@ -56,6 +56,9 @@ public:
 	// 体力の取得（GUI表示用）
 	int GetHP() const { return bossState.HP_; }
 
+	// マップのデータを受け取る（壁との当たり判定に使う）
+	void SetMapChipField(MapChipField* mapChipField) { mapChipField_ = mapChipField; }
+
 private:
 	// ============================================================
 	// 型
@@ -68,6 +71,13 @@ private:
 		bool isWall = false;    // 壁
 		KamataEngine::Vector3 velocity_;
 	};
+
+	// ============================================================
+	// 移動
+	// ============================================================
+
+	// 速度の分だけ動いて、壁に当たったら跳ね返る
+	void Move();
 
 	// ============================================================
 	// マップとの当たり判定
@@ -93,9 +103,14 @@ private:
 	// 定数
 	// ============================================================
 
-	// 当たり判定のサイズ
-	static inline const float kWidth = 0.8f;
-	static inline const float kHight = 0.8f;
+	// 当たり判定のサイズ（見た目の大きさもこれに合わせる）
+	// ※1.0より大きくすると、角と角の間に1マスのブロックが入っても気付けなくなるので注意
+	static inline const float kWidth = 2.0f;
+	static inline const float kHight = 2.0f;
+
+	// 移動
+	static inline const float kMoveSpeed = 0.1f;  // 横に進む速さ（1.0未満にすること）
+	static inline const float kRestitution = 1.0f; // 壁で跳ね返るときの反発（1.0で減速しない）
 
 	// マップに当たったときの減速
 	static inline const float kAttenuationLanding = 0.01f; // 着地時の速度減衰率
