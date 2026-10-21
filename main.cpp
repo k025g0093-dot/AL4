@@ -20,7 +20,7 @@ void DrawScene();
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
-	KamataEngine::Initialize(L"LE2B_29_ヤマト_ユウヤ_味方はぜんぶ、元は敵");
+	KamataEngine::Initialize(L"LE2B_29_ヤマト_ユウヤ_突進スライザー");
 	DirectXCommon* dxCommon = DirectXCommon::GetInstance();
 	ImGuiManager* imguiManager = ImGuiManager::GetInstance();
 

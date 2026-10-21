@@ -3,13 +3,12 @@
 #include "MapChipField.h"
 #include "MyMath.h"
 
+#include "Player.h"
 #include <algorithm>
 #include <array>
 #include <cassert>
 #include <cmath>
 #include <numbers>
-#include "Player.h"
-
 
 using namespace KamataEngine;
 
@@ -27,7 +26,6 @@ void BossEnemy::Initialize(Camera* camera, Model* model) {
 
 	bossState.HP_ = 100;
 
-
 	worldTransform_.Initialize();
 	// 大きさ2でもブロックに重ならない、開けた場所に置く
 	worldTransform_.translation_.x = 28.0f;
@@ -35,29 +33,24 @@ void BossEnemy::Initialize(Camera* camera, Model* model) {
 	// 見た目の大きさを当たり判定に合わせる（ずれると壁にめり込んで見える）
 	worldTransform_.scale_ = {kWidth, kHight, kWidth};
 
+	BehaviorAttackInitialize();
 
 	// 最初は右上へ進む（斜めでも速さが kMoveSpeed になるように、向きの長さを1にしてから掛ける）
-	float rdian = RandomEngine::GetRandomFloat(0, std::numbers::pi_v<float>*2.0f);
+	float rdian = RandomEngine::GetRandomFloat(0, std::numbers::pi_v<float> * 2.0f);
 	const float kDiagonalX = std::cos(rdian);
 	const float kDiagonalY = std::sin(rdian);
 	velocity_ = {kMoveSpeed * kDiagonalX, kMoveSpeed * kDiagonalY, 0.0f};
 }
 
 void BossEnemy::Update() {
-	if (directionChangeTimer_ <= 0) {
-		ChooseRandomDirection();
-		directionChangeTimer_ = RandomEngine::GetRandomInt(kDirectionChangeMinFrames, kDirectionChangeMaxFrames);
-	}
-	directionChangeTimer_--;
 
-	Move();
+	BehaviorUpdate();
 
 	worldTransform_.matWorld_ = MakeAffineMatrix(worldTransform_.scale_, worldTransform_.rotation_, worldTransform_.translation_);
 	worldTransform_.TransferMatrix();
 }
 
 void BossEnemy::Draw() { model_->Draw(worldTransform_, *camera_); }
-
 
 Vector3 BossEnemy::GetWorldPodition() {
 
@@ -80,13 +73,13 @@ AABB BossEnemy::GetAABB() {
 	return aabb;
 }
 
-void BossEnemy::OnCollsion( Player* player) {
-	if (player->isAttack()&&!player->status_.isHit) {
+void BossEnemy::OnCollsion(Player* player) {
+	if (player->isAttack() && !player->status_.isHit) {
 
 		bossState.HP_ -= 10;
 		player->status_.isHit = true;
 
-			// 最初は右上へ進む（斜めでも速さが kMoveSpeed になるように、向きの長さを1にしてから掛ける）
+		// 最初は右上へ進む（斜めでも速さが kMoveSpeed になるように、向きの長さを1にしてから掛ける）
 		float rdian = RandomEngine::GetRandomFloat(0, std::numbers::pi_v<float> * 2.0f);
 		const float kDiagonalX = std::cos(rdian);
 		const float kDiagonalY = std::sin(rdian);
@@ -95,7 +88,6 @@ void BossEnemy::OnCollsion( Player* player) {
 		return;
 	}
 }
-
 
 // ============================================================
 // 移動
@@ -128,7 +120,8 @@ void BossEnemy::Move() {
 }
 
 void BossEnemy::ChooseRandomDirection() {
-	// 最初は右上へ進む（斜めでも速さが kMoveSpeed になるように、向きの長さを1にしてから掛ける）
+	// ランダムで進むようにする
+
 	float rdian = RandomEngine::GetRandomFloat(0, std::numbers::pi_v<float> * 2.0f);
 	const float kDiagonalX = std::cos(rdian);
 	const float kDiagonalY = std::sin(rdian);
@@ -164,6 +157,152 @@ bool BossEnemy::HitsBlock(const Vector3& center) const {
 		}
 	}
 	return false;
+}
+
+
+// ============================================================
+// ボスの行動変化
+// ============================================================
+
+void BossEnemy::BehaviorUpdate() {
+
+	switch (bossBehaviro) {
+	case BossBehavior::kRoot:
+
+		//ランダムに動いて歩き回る処理
+		if (directionChangeTimer <= 0) {
+			ChooseRandomDirection();
+			directionChangeTimer = RandomEngine::GetRandomInt(kDirectionChangeMinFrames, kDirectionChangeMaxFrames);
+		}
+		directionChangeTimer--;
+
+		if (directionChangePaseTimer <= 0) {
+			bossBehaviro = BossBehavior::kAttack;
+			directionChangePaseTimer = RandomEngine::GetRandomInt(kDirectionChangeMinPhase, kDirectionChangeMaxPhase);
+		}
+		directionChangePaseTimer--;
+
+		Move();
+
+		break;
+	case BossBehavior::kAttack:
+
+		BehaviorAttackUpdate();
+		AttackMapCollision();
+
+		if (attack_.phase == BossAttackPhase::kAfterglow) {
+			bossBehaviro = BossBehavior::kUnknown;
+			stunTimer = kStunFrames;
+		}
+
+		break;
+	case BossBehavior::kUnknown:
+
+		if (stunTimer <= 0) {
+			BehaviorAttackInitialize();
+			bossBehaviro = BossBehavior::kRoot;
+			stunTimer = 0;
+		}
+		stunTimer--;
+
+		break;
+	default:
+		break;
+	}
+
+}
+
+// ============================================================
+// 攻撃処理
+// ============================================================
+
+void BossEnemy::BehaviorAttackInitialize() { attack_.phase = BossAttackPhase::kSave; }
+
+void BossEnemy::BehaviorAttackUpdate() {
+
+	switch (attack_.phase) {
+	case BossAttackPhase::kSave: {
+
+		float rdian = RandomEngine::GetRandomFloat(0, std::numbers::pi_v<float> * 2.0f);
+		const float kDiagonalX = std::cos(rdian);
+		const float kDiagonalY = std::sin(rdian);
+
+		float t = static_cast<float>(attack_.counter) / 10.0f;
+		worldTransform_.scale_.z = EaseOut(1.0f, 0.3f, t);
+		worldTransform_.scale_.y = EaseOut(1.0f, 1.6f, t);
+		attack_.counter++;
+		if (attack_.counter >= 10) {
+			attack_.phase = BossAttackPhase::kCharge;
+			attack_.counter = 0;
+			attack_.direction.x = kDiagonalX;
+			attack_.direction.y = kDiagonalY;
+			// 突進の向きを確定させる（斜めでも速さが変わらないように長さを1にする）
+			float length = std::sqrt(attack_.direction.x * attack_.direction.x + attack_.direction.y * attack_.direction.y);
+			if (length > 0.0f) {
+				attack_.direction.x /= length;
+				attack_.direction.y /= length;
+			}
+		}
+
+		break;
+	}
+	case BossAttackPhase::kCharge: {
+		attack_.counter++;
+		// 出だしが一番速く、だんだん落ちて最低速度で落ち着く
+		float t = std::min(static_cast<float>(attack_.counter) / kDashEaseFrames, 1.0f);
+		float ease = 1.0f - (1.0f - t) * (1.0f - t);
+		float speed = kDashStartSpeed + (kDashMinSpeed - kDashStartSpeed) * ease;
+
+		velocity_.x = attack_.direction.x * speed;
+		velocity_.y = attack_.direction.y * speed;
+
+		// 進んでいる向きに伸ばす（横の成分はz、縦の成分はyを伸ばす）
+		float stretch = 1.0f + 0.5f * (speed / kDashStartSpeed);
+		float squash = 1.0f / stretch;
+		float ax = std::fabs(attack_.direction.x);
+		float ay = std::fabs(attack_.direction.y);
+		worldTransform_.scale_.z = squash + (stretch - squash) * ax;
+		worldTransform_.scale_.y = squash + (stretch - squash) * ay;
+		break;
+	}
+	case BossAttackPhase::kAfterglow: { // 余韻
+		float t = static_cast<float>(attack_.counter) / 10.0f;
+		worldTransform_.scale_.z = EaseOut(1.3f, 1.0f, t);
+		worldTransform_.scale_.y = EaseOut(0.7f, 1.0f, t);
+		break;
+	}
+	default:
+		break;
+	}
+}
+
+void BossEnemy::AttackMapCollision() {
+	// マップを受け取っていなければ動かない（SetMapChipFieldの呼び忘れ対策）
+	if (!mapChipField_) {
+		return;
+	}
+
+	Vector3& position = worldTransform_.translation_;
+
+	// 横と縦を別々に動かす。
+	// 同時に動かすと、斜めにブロックの角へ入ったときに「横と縦のどちらで当たったか」が分からなくなるため。
+
+	//  横だけ動かして、重なったら戻して横の向きを反転
+	position.x += velocity_.x;
+
+	if (HitsBlock(position)) {
+		position.x -= velocity_.x;
+		velocity_.x = -velocity_.x * kRestitution;
+		attack_.phase = BossAttackPhase::kAfterglow;
+	}
+	position.y += velocity_.y ;
+
+	//  縦だけ動かして、重なったら戻して縦の向きを反転
+	if (HitsBlock(position)) {
+		position.y -= velocity_.y;
+		velocity_.y = -velocity_.y * kRestitution;
+		attack_.phase = BossAttackPhase::kAfterglow;
+	}
 }
 
 // ============================================================
@@ -414,3 +553,6 @@ Vector3 BossEnemy::CornerPositio(const Vector3& center, BossCorner corner) {
 
 	return center + offsetTable[static_cast<uint32_t>(corner)];
 }
+
+
+float BossEnemy::EaseOut(float start, float end, float t) { return start + (end - start) * (1.0f - (1.0f - t) * (1.0f - t)); }
