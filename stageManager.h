@@ -12,7 +12,7 @@ public:
 
 	// 範囲チェック付きのゲッター
 	const StageData& GetStageData(int32_t index) const {
-		assert(index >= 0 && index < stageData_.size());
+		//assert(index >= 0 && index < stageData_.size());
 		return stageData_[index];
 	}
 

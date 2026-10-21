@@ -44,6 +44,10 @@ void BossEnemy::Initialize(Camera* camera, Model* model) {
 
 void BossEnemy::Update() {
 
+	if (bossState.HP_ <= 0) {
+		bossState.isDeth = true;
+	}
+
 	BehaviorUpdate();
 
 	worldTransform_.matWorld_ = MakeAffineMatrix(worldTransform_.scale_, worldTransform_.rotation_, worldTransform_.translation_);
@@ -165,6 +169,8 @@ bool BossEnemy::HitsBlock(const Vector3& center) const {
 // ============================================================
 
 void BossEnemy::BehaviorUpdate() {
+
+	if (bossState.isDeth) {return;}
 
 	switch (bossBehaviro) {
 	case BossBehavior::kRoot:

@@ -20,7 +20,7 @@ void DrawScene();
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
-	KamataEngine::Initialize(L"LE2B_29_ヤマト_ユウヤ_突進スライザー");
+	KamataEngine::Initialize(L"LE2B_29_ヤマト_ユウヤ_跳ねて突撃");
 	DirectXCommon* dxCommon = DirectXCommon::GetInstance();
 	ImGuiManager* imguiManager = ImGuiManager::GetInstance();
 
@@ -79,13 +79,24 @@ void ChangeScene() {
 	case Scene::kGame:
 
 		if (gamePlay_->IsFinished()) {
+			if (gamePlay_->IsClear()) {
 
-			scene = Scene::kGameClear;
-			delete gamePlay_;
-			gamePlay_ = nullptr;
+				scene = Scene::kGameClear;
+				delete gamePlay_;
+				gamePlay_ = nullptr;
 
-			clear_ = new GameClear;
-			clear_->InitIalize();
+				clear_ = new GameClear;
+				clear_->InitIalize();
+			} else {
+
+				scene = Scene::kGameOver;
+				delete gamePlay_;
+				gamePlay_ = nullptr;
+
+				gameOver_ = new GameOver;
+				gameOver_->InitIalize();
+
+			}
 		}
 
 		break;
@@ -112,7 +123,6 @@ void ChangeScene() {
 
 			title_ = new TitleScene;
 			title_->InitIalize();
-
 		}
 
 		break;

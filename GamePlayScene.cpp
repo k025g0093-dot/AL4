@@ -1,5 +1,8 @@
 #include "GamePlayScene.h"
 
+#include <cmath>
+#include <numbers>
+
 #ifdef USE_IMGUI
 #include <imgui.h>
 #endif
@@ -31,9 +34,9 @@ void GamePlayScene::InitIalize() {
 	modelMapBlock_ = Model::CreateFromOBJ("block", true); // マップのモデル
 
 	modelPlayer_ = Model::CreateFromOBJ("player", true);
-	modelBoss_ = Model::CreateFromOBJ("player", true);
+	modelBoss_ = Model::CreateFromOBJ("BossEnemy", true);
 	modelAttack_ = Model::CreateFromOBJ("hit_effect", true); // プレイヤーの攻撃モデル
-	modelSkyDome_ = Model::CreateFromOBJ("skydome", true);
+	modelSkyDome_ = Model::CreateFromOBJ("skysphere", true); // 天球
 
 	// キャラクター以外の初期化
 	fade_->Initialize();
@@ -68,6 +71,8 @@ void GamePlayScene::InitIalize() {
 
 	bossEnemy_->Initialize(&cameraController_->GetCamera(), modelBoss_);
 	bossEnemy_->SetMapChipField(mapChipField_); // マップのデータをボスに渡す
+
+	InitializeHud();
 }
 
 void GamePlayScene::Updete() {
@@ -87,20 +92,6 @@ void GamePlayScene::Updete() {
 	case Phese::kMain: {
 
 		RanGamePlayScene();
-
-		bool start = Input::GetInstance()->TriggerKey(DIK_P);
-
-		XINPUT_STATE joyState{};
-		if (Input::GetInstance()->GetJoystickState(0, joyState)) {
-			if (joyState.Gamepad.wButtons & (XINPUT_GAMEPAD_A | XINPUT_GAMEPAD_START)) {
-				start = true;
-			}
-		}
-
-		if (start) {
-			fade_->Start(Fade::Status::FadeOut, 1.0f);
-			phese_ = Phese::kFadeOut;
-		}
 		break;
 	}
 	case Phese::kDeht: // 死亡時
@@ -108,12 +99,25 @@ void GamePlayScene::Updete() {
 
 		// ゲームオーバ中の処理
 		DeathUpdate();
-		// 右端の処理：パーティクルもフェードも終わったらシーン終了
+		// パーティクルもフェードも終わったらシーン終了
 		if (deathParticles_->IsFinished() && fade_->IsFinished()) {
 			fade_->Start(Fade::Status::FadeOut, 1.0f);
+			isGameClear = false;
 			phese_ = Phese::kFadeOut;
 		}
 	} break;
+
+	case Phese::kClear: {
+		// ゲームクリア中の処理
+		DeathUpdate();
+		// パーティクルもフェードも終わったらシーン終了
+		if (deathParticles_->IsFinished() && fade_->IsFinished()) {
+			fade_->Start(Fade::Status::FadeOut, 1.0f);
+			isGameClear = true;
+			phese_ = Phese::kFadeOut;
+		}
+		break;
+	}
 
 	case Phese::kFadeOut:
 		if (fade_->IsFinished()) {
@@ -124,7 +128,118 @@ void GamePlayScene::Updete() {
 		break;
 	}
 
+	UpdateHud();
+	UpdateAimMarker();
 	DrawDebugGui();
+}
+
+// ============================================================
+// 体力のUI
+// ============================================================
+
+void GamePlayScene::InitializeHud() {
+	hudTexture_ = TextureManager::Load("white1x1.png");
+
+	// ボスの体力バー：暗い背景（枠）の上に、赤い中身を重ねる
+	bossHpBack_ = Sprite::Create(hudTexture_, {kBossBarX - kBossBarFrame, kBossBarY - kBossBarFrame});
+	bossHpBack_->SetSize(Vector2(kBossBarWidth + kBossBarFrame * 2.0f, kBossBarHeight + kBossBarFrame * 2.0f));
+	bossHpBack_->SetColor(Vector4(0.08f, 0.08f, 0.12f, 0.85f));
+
+	bossHpFill_ = Sprite::Create(hudTexture_, {kBossBarX, kBossBarY});
+	bossHpFill_->SetSize(Vector2(kBossBarWidth, kBossBarHeight));
+	bossHpFill_->SetColor(Vector4(0.9f, 0.2f, 0.3f, 1.0f));
+
+	// プレイヤーの体力：最大体力の数だけ四角を並べる
+	for (int i = 0; i < kPlayerMaxHP; ++i) {
+		float x = kHpIconX + (kHpIconSize + kHpIconSpace) * static_cast<float>(i);
+		playerHpIcons_[i] = Sprite::Create(hudTexture_, {x, kHpIconY});
+		playerHpIcons_[i]->SetSize(Vector2(kHpIconSize, kHpIconSize));
+	}
+
+	// 突進の向きの目印：体力と同じ白い画像の四角を8つ。真ん中を基準に置く
+	for (size_t i = 0; i < aimDots_.size(); ++i) {
+		aimDots_[i] = Sprite::Create(hudTexture_, {0.0f, 0.0f});
+		aimDots_[i]->SetSize(Vector2(kAimDotSize, kAimDotSize));
+		aimDots_[i]->SetAnchorPoint(Vector2(0.5f, 0.5f));
+	}
+}
+
+void GamePlayScene::UpdateAimMarker() {
+	// 突進中と死んだあとは出さない（狙っているときだけ見せる）
+	isAimVisible_ = !player_->isAttack() && !player_->IsDead();
+	if (!isAimVisible_) {
+		return;
+	}
+
+	// ワールドの位置を画面の位置（ピクセル）に変える準備
+	const Camera& camera = cameraController_->GetCamera();
+	const Matrix4x4 viewProjection = Multiply(camera.matView, camera.matProjection);
+
+	const Vector3 center = player_->GetWorldTransform().translation_;
+	const Vector3 aim = player_->GetAimDirection();
+
+	// 狙っている向きが8方向のどれに一番近いか（角度を45度ずつに丸める）
+	const float kStep = std::numbers::pi_v<float> * 2.0f / static_cast<float>(kAimDotCount);
+	float aimAngle = std::atan2(aim.y, aim.x);
+	int litIndex = static_cast<int>(std::lround(aimAngle / kStep));
+	litIndex = (litIndex % kAimDotCount + kAimDotCount) % kAimDotCount; // マイナスを0〜7に直す
+
+	for (size_t i = 0; i < aimDots_.size(); ++i) {
+		// この四角の方向（0番が右、反時計回り）
+		float angle = kStep * static_cast<float>(i);
+		Vector3 world = center + Vector3(std::cos(angle), std::sin(angle), 0.0f) * kAimDotRadius;
+
+		Vector3 ndc = Transform(world, viewProjection); // -1〜1 の範囲になる
+		float screenX = (ndc.x + 1.0f) * 0.5f * 1280.0f;
+		float screenY = (1.0f - ndc.y) * 0.5f * 720.0f; // 画面は下向きが+なので上下を反転
+		aimDots_[i]->SetPosition(Vector2(screenX, screenY));
+
+		// 狙っている方向は明るく大きく、それ以外は体力の減った分と同じ暗い色
+		if (static_cast<int>(i) == litIndex) {
+			aimDots_[i]->SetSize(Vector2(kAimDotLitSize, kAimDotLitSize));
+			aimDots_[i]->SetColor(Vector4(0.3f, 0.85f, 1.0f, 1.0f));
+		} else {
+			aimDots_[i]->SetSize(Vector2(kAimDotSize, kAimDotSize));
+			aimDots_[i]->SetColor(Vector4(0.2f, 0.2f, 0.25f, 0.6f));
+		}
+	}
+}
+
+void GamePlayScene::DrawAimMarker() {
+	if (!isAimVisible_) {
+		return;
+	}
+	for (Sprite* dot : aimDots_) {
+		dot->Draw();
+	}
+}
+
+void GamePlayScene::UpdateHud() {
+	// ボス：残り体力の割合だけバーを伸ばす
+	int bossHP = std::clamp(bossEnemy_->GetHP(), 0, kBossMaxHP);
+	float rate = static_cast<float>(bossHP) / static_cast<float>(kBossMaxHP);
+	bossHpFill_->SetSize(Vector2(kBossBarWidth * rate, kBossBarHeight));
+
+	// プレイヤー：残っている分は明るく、減った分は暗くする
+	int playerHP = std::clamp(player_->status_.HP, 0, kPlayerMaxHP);
+	for (int i = 0; i < kPlayerMaxHP; ++i) {
+		if (i < playerHP) {
+			playerHpIcons_[i]->SetColor(Vector4(0.3f, 0.85f, 1.0f, 1.0f));
+		} else {
+			playerHpIcons_[i]->SetColor(Vector4(0.2f, 0.2f, 0.25f, 0.6f));
+		}
+	}
+}
+
+void GamePlayScene::DrawHud() {
+	Sprite::PreDraw();
+	DrawAimMarker();
+	bossHpBack_->Draw();
+	bossHpFill_->Draw();
+	for (Sprite* icon : playerHpIcons_) {
+		icon->Draw();
+	}
+	Sprite::PostDraw();
 }
 
 void GamePlayScene::DrawDebugGui() {
@@ -175,6 +290,9 @@ void GamePlayScene::Draw() {
 	}
 	Model::PostDraw();
 
+	// 体力のUI（3Dの上、フェードの下）
+	DrawHud();
+
 	fade_->Draw();
 }
 
@@ -187,6 +305,16 @@ GamePlayScene::~GamePlayScene() {
 	delete skyDome_;
 	delete modelBoss_;
 	delete deathParticles_;
+
+	// 体力のUI
+	delete bossHpBack_;
+	delete bossHpFill_;
+	for (Sprite* icon : playerHpIcons_) {
+		delete icon;
+	}
+	for (Sprite* dot : aimDots_) {
+		delete dot;
+	}
 
 	for (std::vector<WorldTransform*>& worldTransformBlockRow : worldTransformBlocks_) {
 		for (WorldTransform* worldTransformBlock : worldTransformBlockRow) {
@@ -241,11 +369,13 @@ void GamePlayScene::RanGamePlayScene() {
 	CheckAllCollisions();
 
 	if (player_->IsDead()) {
-
 		phese_ = Phese::kDeht;
-	
 		deathParticles_->Initialize(modelPlayer_, &cameraController_->GetCamera(), player_->GetWorldPodition());
+	}
 
+	if (bossEnemy_->isDeth()) {
+		phese_ = Phese::kClear;
+		deathParticles_->Initialize(modelBoss_, &cameraController_->GetCamera(), player_->GetWorldPodition());
 	}
 
 	// カメラの更新処理

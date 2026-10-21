@@ -630,6 +630,15 @@ AABB Player::GetAABB() {
 
 const bool Player::isAttack() { return behavior_.current == Behavior::kAttack; }
 
+Vector3 Player::GetAimDirection() const {
+	// 突進の向きを決めるところ（BehaviorAttackUpdate の溜め）と同じ決め方にする
+	float length = std::sqrt(attack_.direction.x * attack_.direction.x + attack_.direction.y * attack_.direction.y);
+	if (length > 0.0f) {
+		return {attack_.direction.x / length, attack_.direction.y / length, 0.0f};
+	}
+	return {turn_.direction == LRDirection::kRight ? 1.0f : -1.0f, 0.0f, 0.0f};
+}
+
 // ============================================================
 // 便利関数
 // ============================================================

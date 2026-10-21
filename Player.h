@@ -83,6 +83,8 @@ public:
 	LRDirection GetLRDirection() const { return turn_.direction; }
 	bool IsDead() const { return status_.isDead; }
 	const bool isAttack();
+	// 今スペースを押したら突進する向き（長さ1）。何も押していなければ向いている方
+	KamataEngine::Vector3 GetAimDirection() const;
 
 	// ============================================================
 	// 外から直接触られている変数

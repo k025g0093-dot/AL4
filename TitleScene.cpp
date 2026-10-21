@@ -11,12 +11,28 @@ void TitleScene::InitIalize() {
 	worldTransform_.Initialize();
 	camera_.Initialize();
 
+
 	input_ = Input::GetInstance();
+
+	// スタートの案内の画像
+	UITexture_ = TextureManager::Load("SpaceUI.png");
+	UISprite_ = Sprite::Create(UITexture_, {0, 0});
+	UISprite_->SetSize(Vector2(1280.0f, 720.0f));
+
+	titletexture_ = TextureManager::Load("TITLE.png");
+	titleSprite_ = Sprite::Create(titletexture_, {0, 0});
+	titleSprite_->SetSize(Vector2(1280.0f, 720.0f));
+
+	// 天球
+	modelSkyDome_ = Model::CreateFromOBJ("skydome", true);
+	skyDome_ = new SkyDome();
+	skyDome_->Initialize(modelSkyDome_);
 }
 
 void TitleScene::Updete() {
 
 	fade_->Update();
+	skyDome_->Update();
 
 	switch (phese_) {
 	case Phese::kFadeIn:
@@ -52,6 +68,26 @@ void TitleScene::Updete() {
 	}
 }
 
-void TitleScene::Draw() { fade_->Draw(); }
+void TitleScene::Draw() {
+	// 天球を一番奥に描く
+	Model::PreDraw();
+	skyDome_->Draw(&camera_);
+	Model::PostDraw();
 
-TitleScene::~TitleScene() { delete fade_; }
+	// 画像を描いてから、一番手前にフェードを重ねる
+	Sprite::PreDraw();
+	titleSprite_->Draw();
+
+	UISprite_->Draw();
+	Sprite::PostDraw();
+
+	fade_->Draw();
+}
+
+TitleScene::~TitleScene() {
+	delete fade_;
+	delete UISprite_;
+	delete titleSprite_;
+	delete skyDome_;
+	delete modelSkyDome_;
+}

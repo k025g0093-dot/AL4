@@ -8,6 +8,7 @@ class MapChipField;
 
 struct state {
 	int HP_;
+	bool isDeth;
 };
 // ============================================================
 // 列挙型
@@ -60,7 +61,7 @@ public:
 
 	// 体力の取得（GUI表示用）
 	int GetHP() const { return bossState.HP_; }
-
+	bool isDeth() const { return bossState.isDeth; }
 	// マップのデータを受け取る（壁との当たり判定に使う）
 	void SetMapChipField(MapChipField* mapChipField) { mapChipField_ = mapChipField; }
 
