@@ -26,6 +26,10 @@ void GameClear::InitIalize() {
 	modelSkyDome_ = Model::CreateFromOBJ("skydome", true);
 	skyDome_ = new SkyDome();
 	skyDome_->Initialize(modelSkyDome_);
+
+	// BGM（ループ再生）
+	bgmHandle_ = KamataEngine::Audio::GetInstance()->LoadWave("sound/GameClear.wav");
+	bgmVoice_ = KamataEngine::Audio::GetInstance()->PlayWave(bgmHandle_, true, kBgmVolume);
 }
 
 void GameClear::Updete() {
@@ -84,6 +88,8 @@ void GameClear::Draw() {
 }
 
 GameClear::~GameClear() {
+	// シーンが終わるときにBGMを止める（止めないと次のシーンの音と重なる）
+	KamataEngine::Audio::GetInstance()->StopWave(bgmVoice_);
 	delete fade_;
 	delete resultSprite_;
 	delete skyDome_;

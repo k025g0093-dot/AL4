@@ -27,6 +27,10 @@ void TitleScene::InitIalize() {
 	modelSkyDome_ = Model::CreateFromOBJ("skydome", true);
 	skyDome_ = new SkyDome();
 	skyDome_->Initialize(modelSkyDome_);
+
+	// BGM（ループ再生）
+	bgmHandle_ = KamataEngine::Audio::GetInstance()->LoadWave("sound/TitleAndSelect.wav");
+	bgmVoice_ = KamataEngine::Audio::GetInstance()->PlayWave(bgmHandle_, true, kBgmVolume);
 }
 
 void TitleScene::Updete() {
@@ -85,6 +89,8 @@ void TitleScene::Draw() {
 }
 
 TitleScene::~TitleScene() {
+	// シーンが終わるときにBGMを止める（止めないと次のシーンの音と重なる）
+	KamataEngine::Audio::GetInstance()->StopWave(bgmVoice_);
 	delete fade_;
 	delete UISprite_;
 	delete titleSprite_;

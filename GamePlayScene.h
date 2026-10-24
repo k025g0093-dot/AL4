@@ -138,4 +138,9 @@ private:
 	std::array<KamataEngine::Sprite*, kAimDotCount> aimDots_{};
 	bool isAimVisible_ = false;
 
+
+	// BGM
+	uint32_t bgmHandle_ = 0;                   // 読み込んだ音のデータ
+	uint32_t bgmVoice_ = 0;                    // 再生中の音（止めるときに使う）
+	static inline const float kBgmVolume = 0.5f; // 音量（1.0が元の大きさ）
 };

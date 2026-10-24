@@ -73,6 +73,10 @@ void GamePlayScene::InitIalize() {
 	bossEnemy_->SetMapChipField(mapChipField_); // マップのデータをボスに渡す
 
 	InitializeHud();
+
+	// BGM（ループ再生）
+	bgmHandle_ = KamataEngine::Audio::GetInstance()->LoadWave("sound/GamePlaye.wav");
+	bgmVoice_ = KamataEngine::Audio::GetInstance()->PlayWave(bgmHandle_, true, kBgmVolume);
 }
 
 void GamePlayScene::Updete() {
@@ -297,6 +301,8 @@ void GamePlayScene::Draw() {
 }
 
 GamePlayScene::~GamePlayScene() {
+	// シーンが終わるときにBGMを止める（止めないと次のシーンの音と重なる）
+	KamataEngine::Audio::GetInstance()->StopWave(bgmVoice_);
 	delete fade_;
 	delete player_;
 	delete modelAttack_;

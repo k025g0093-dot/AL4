@@ -27,6 +27,10 @@ void GameOver::InitIalize() {
 	modelSkyDome_ = Model::CreateFromOBJ("skydome", true);
 	skyDome_ = new SkyDome();
 	skyDome_->Initialize(modelSkyDome_);
+
+	// BGM（ループ再生）
+	bgmHandle_ = KamataEngine::Audio::GetInstance()->LoadWave("sound/GameOver.wav");
+	bgmVoice_ = KamataEngine::Audio::GetInstance()->PlayWave(bgmHandle_, true, kBgmVolume);
 }
 
 void GameOver::Updete() {
@@ -89,6 +93,8 @@ void GameOver::Draw() {
 }
 
 GameOver::~GameOver() {
+	// シーンが終わるときにBGMを止める（止めないと次のシーンの音と重なる）
+	KamataEngine::Audio::GetInstance()->StopWave(bgmVoice_);
 	delete fade_;
 	delete resultSprite_;
 	delete skyDome_;
