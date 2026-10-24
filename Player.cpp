@@ -89,9 +89,6 @@ void Player::Update() {
 
 void Player::Draw() {
 	model_->Draw(worldTransform_, *camera_);
-	if (behavior_.current == Behavior::kAttack) {
-		modelAttack_->Draw(worldTransformAttack_, *camera_);
-	}
 }
 
 // 行動の切り替えリクエストがあれば切り替えて、その行動の初期化をする
