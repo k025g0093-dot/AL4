@@ -161,6 +161,10 @@ void GamePlayScene::InitializeHud() {
 	}
 
 	// 突進の向きの目印：体力と同じ白い画像の四角を8つ。真ん中を基準に置く
+	// 操作説明：画面の右下
+	controlsTexture_ = TextureManager::Load("controlsUI.png");
+	controlsSprite_ = Sprite::Create(controlsTexture_, {1280.0f - kControlsWidth - kControlsMargin, 720.0f - kControlsHeight - kControlsMargin});
+
 	for (size_t i = 0; i < aimDots_.size(); ++i) {
 		aimDots_[i] = Sprite::Create(hudTexture_, {0.0f, 0.0f});
 		aimDots_[i]->SetSize(Vector2(kAimDotSize, kAimDotSize));
@@ -243,6 +247,7 @@ void GamePlayScene::DrawHud() {
 	for (Sprite* icon : playerHpIcons_) {
 		icon->Draw();
 	}
+	controlsSprite_->Draw();
 	Sprite::PostDraw();
 }
 
@@ -315,6 +320,7 @@ GamePlayScene::~GamePlayScene() {
 	// 体力のUI
 	delete bossHpBack_;
 	delete bossHpFill_;
+	delete controlsSprite_;
 	for (Sprite* icon : playerHpIcons_) {
 		delete icon;
 	}

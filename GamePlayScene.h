@@ -130,6 +130,13 @@ private:
 	KamataEngine::Sprite* bossHpFill_ = nullptr;
 	std::array<KamataEngine::Sprite*, kPlayerMaxHP> playerHpIcons_{};
 
+	// 操作説明（画面の右下に出す。画像の大きさは 340x128）
+	static inline const float kControlsWidth = 340.0f;
+	static inline const float kControlsHeight = 128.0f;
+	static inline const float kControlsMargin = 24.0f; // 画面の端からの距離
+	uint32_t controlsTexture_ = 0;
+	KamataEngine::Sprite* controlsSprite_ = nullptr;
+
 	// 突進の向きの目印（0番が右、そこから反時計回りに45度ずつ）
 	static inline const int kAimDotCount = 8;          // 8方向
 	static inline const float kAimDotRadius = 1.5f;    // プレイヤーの中心からの距離（ワールド）
