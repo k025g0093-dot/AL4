@@ -31,6 +31,9 @@
     <Filter Include="ソース ファイル\敵">
       <UniqueIdentifier>{d7e955e4-08e1-4ea9-8bf3-9b99a84cd530}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\ボスの挙動">
+      <UniqueIdentifier>{3ec689ad-87b6-455b-8ae7-cad7e04f712d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -77,6 +80,9 @@
     </ClCompile>
     <ClCompile Include="Enemy.cpp">
       <Filter>ソース ファイル\敵</Filter>
+    </ClCompile>
+    <ClCompile Include="BossEnemy.cpp">
+      <Filter>ソース ファイル\ボスの挙動</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -130,6 +136,9 @@
     </ClInclude>
     <ClInclude Include="Enemy.h">
       <Filter>ソース ファイル\敵</Filter>
+    </ClInclude>
+    <ClInclude Include="BossEnemy.h">
+      <Filter>ソース ファイル\ボスの挙動</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

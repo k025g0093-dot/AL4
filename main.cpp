@@ -20,8 +20,9 @@ void DrawScene();
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
-	KamataEngine::Initialize(L"LE2B_29_ヤマト_ユウヤ_味方はぜんぶ、元は敵");
+	KamataEngine::Initialize(L"LE2B_29_ヤマト_ユウヤ_跳ねて突撃");
 	DirectXCommon* dxCommon = DirectXCommon::GetInstance();
+	ImGuiManager* imguiManager = ImGuiManager::GetInstance();
 
 	scene = Scene::kTitle;
 	title_ = new TitleScene;
@@ -35,13 +36,22 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 		// 更新処理
 
+		// ImGuiの受付開始（これより後でないとImGui::Beginなどは呼べない）
+		imguiManager->Begin();
+
 		ChangeScene();
 		UpdateScene();
+
+		// ImGuiの受付終了
+		imguiManager->End();
 
 		// 描画処理
 		dxCommon->PreDraw();
 
 		DrawScene();
+
+		// ImGuiの描画（一番手前に出すので最後）
+		imguiManager->Draw();
 
 		dxCommon->PostDraw();
 	}
@@ -69,13 +79,24 @@ void ChangeScene() {
 	case Scene::kGame:
 
 		if (gamePlay_->IsFinished()) {
+			if (gamePlay_->IsClear()) {
 
-			scene = Scene::kGameClear;
-			delete gamePlay_;
-			gamePlay_ = nullptr;
+				scene = Scene::kGameClear;
+				delete gamePlay_;
+				gamePlay_ = nullptr;
 
-			clear_ = new GameClear;
-			clear_->InitIalize();
+				clear_ = new GameClear;
+				clear_->InitIalize();
+			} else {
+
+				scene = Scene::kGameOver;
+				delete gamePlay_;
+				gamePlay_ = nullptr;
+
+				gameOver_ = new GameOver;
+				gameOver_->InitIalize();
+
+			}
 		}
 
 		break;
@@ -102,7 +123,6 @@ void ChangeScene() {
 
 			title_ = new TitleScene;
 			title_->InitIalize();
-
 		}
 
 		break;

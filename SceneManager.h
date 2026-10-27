@@ -4,6 +4,8 @@
 enum class Phese {
 	kFadeIn,
 	kMain,
+	kDeht,
+	kClear,
 	kFadeOut,
 };
 
