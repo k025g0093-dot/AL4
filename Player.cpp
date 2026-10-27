@@ -19,11 +19,9 @@ Player::Player() {}
 
 Player::~Player() {}
 
-void Player::Initialize(KamataEngine::Model* model, KamataEngine::Model* modelAttack, KamataEngine::Camera* camera, const KamataEngine::Vector3& position) {
+void Player::Initialize(KamataEngine::Model* model, KamataEngine::Camera* camera, const KamataEngine::Vector3& position) {
 	assert(model);
-	assert(modelAttack);
 	model_ = model;
-	modelAttack_ = modelAttack;
 	camera_ = camera;
 
 	velocity_ = {0.0f, 0.0f, 0.0f};
@@ -31,7 +29,6 @@ void Player::Initialize(KamataEngine::Model* model, KamataEngine::Model* modelAt
 
 	// 見た目
 	worldTransform_.Initialize();
-	worldTransformAttack_.Initialize();
 	worldTransform_.scale_ = {1.0f, 1.0f, 1.0f};
 	worldTransform_.translation_ = position;
 	worldTransform_.rotation_ = {0.0f, std::numbers::pi_v<float> * 3.0f / 2.0f, 0.0f};
@@ -115,11 +112,6 @@ void Player::ApplyBehaviorRequest() {
 void Player::UpdateMatrices() {
 	worldTransform_.matWorld_ = MakeAffineMatrix(worldTransform_.scale_, worldTransform_.rotation_, worldTransform_.translation_);
 	worldTransform_.TransferMatrix();
-
-	if (behavior_.current == Behavior::kAttack) {
-		worldTransformAttack_.matWorld_ = MakeAffineMatrix(worldTransformAttack_.scale_, worldTransformAttack_.rotation_, worldTransformAttack_.translation_);
-		worldTransformAttack_.TransferMatrix();
-	}
 }
 
 // ============================================================
@@ -193,16 +185,6 @@ void Player::MovePlayer() {
 
 // ---------- 攻撃 ----------
 void Player::BehaviorAttackUpdate() {
-	// 攻撃モデルを向いている方の少し前に置く
-	Vector3 offset;
-	if (turn_.direction == LRDirection::kRight) {
-		offset = Vector3(0.8f, 0.0f, 0.0f);
-	} else if (turn_.direction == LRDirection::kLeft) {
-		offset = Vector3(-0.8f, 0.0f, 0.0f);
-	}
-	worldTransformAttack_.translation_ = worldTransform_.translation_ + offset;
-	worldTransformAttack_.rotation_ = worldTransform_.rotation_;
-
 	switch (attack_.phase) {
 	case AttackPhase::kSave: { // 溜め
 		float t = static_cast<float>(attack_.counter) / 10.0f;

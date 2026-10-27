@@ -80,7 +80,6 @@ private:
 	//各モデル読み込み口
 	KamataEngine::Model* modelPlayer_ = nullptr;//プレイヤーのモデル
 	KamataEngine::Model* modelBoss_ = nullptr;//プレイヤーのモデル
-	KamataEngine::Model* modelAttack_ = nullptr; // プレイヤーの攻撃モデル
 	KamataEngine::Model* modelMapBlock_ = nullptr; // マップのモデル
 	KamataEngine::Model* modelSkyDome_ = nullptr;  // マップのモデル
 	KamataEngine::Model* modelParticl_ = nullptr;  // プレイヤーの死亡時に出るパーティクル

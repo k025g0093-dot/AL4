@@ -35,7 +35,6 @@ void GamePlayScene::InitIalize() {
 
 	modelPlayer_ = Model::CreateFromOBJ("player", true);
 	modelBoss_ = Model::CreateFromOBJ("BossEnemy", true);
-	modelAttack_ = Model::CreateFromOBJ("hit_effect", true); // プレイヤーの攻撃モデル
 	modelSkyDome_ = Model::CreateFromOBJ("skysphere", true); // 天球
 
 	// キャラクター以外の初期化
@@ -305,7 +304,6 @@ GamePlayScene::~GamePlayScene() {
 	KamataEngine::Audio::GetInstance()->StopWave(bgmVoice_);
 	delete fade_;
 	delete player_;
-	delete modelAttack_;
 	delete modelPlayer_;
 	delete debugCamera_;
 	delete skyDome_;
@@ -417,7 +415,7 @@ void GamePlayScene::GenerateFieldObjects() {
 			} break;
 			case MapChipType::kPlayer: {
 				Vector3 playerPosition = mapChipField_->GetMapChipPositionByIndex(i, j);
-				player_->Initialize(modelPlayer_, modelAttack_, &cameraController_->GetCamera(), playerPosition);
+				player_->Initialize(modelPlayer_, &cameraController_->GetCamera(), playerPosition);
 				player_->SetMapChipFiled(mapChipField_); // マップのデータをプレイヤーに渡す
 
 				deathParticles_->Initialize(modelPlayer_, &cameraController_->GetCamera(), playerPosition);

@@ -57,7 +57,7 @@ public:
 	Player();
 	~Player();
 
-	void Initialize(KamataEngine::Model* model, KamataEngine::Model* modelAttack, KamataEngine::Camera* camera, const KamataEngine::Vector3& position);
+	void Initialize(KamataEngine::Model* model, KamataEngine::Camera* camera, const KamataEngine::Vector3& position);
 	void Update();
 	void Draw();
 
@@ -205,8 +205,6 @@ private:
 	// 見た目
 	KamataEngine::Model* model_ = nullptr;
 	KamataEngine::WorldTransform worldTransform_;
-	KamataEngine::Model* modelAttack_ = nullptr;
-	KamataEngine::WorldTransform worldTransformAttack_;
 	uint32_t textureHandle_ = 0; // 現在未使用
 
 	// 移動
